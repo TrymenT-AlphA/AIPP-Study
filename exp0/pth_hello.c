@@ -39,5 +39,14 @@ void* Pth_hello(void* rank){
 
     printf("Hello from thread %ld of %d\n", my_rank, thread_count);
 
+    #ifdef DEBUG
+    int my_count = 100;
+    while(my_count--)
+        if (my_rank == 0)
+            printf("Thread [%ld] %s\n", my_rank, "0000000000000000000000000000000000000000");
+        else
+            printf("Thread [%ld] %s\n", my_rank, "1111111111111111111111111111111111111111");
+    #endif
+
     return NULL;
 } /* Hello */

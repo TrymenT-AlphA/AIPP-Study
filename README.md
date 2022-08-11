@@ -1,6 +1,13 @@
 # 并行程序设计导论 读书笔记
 
+* talk is easy, show me the code
+* read the friendly manual
+
 ## 第四章 用Pthreads进行共享内存编程
+
+实验环境
+
+> windows subsystem for linux 2
 
 安装Pthreads手册
 
@@ -60,6 +67,91 @@ https://github.com/TrymenT-AlphA/AIPP-Study
 
 ### Pth_hello.c
 
+#### pthread_create
+
+```C
+SYNOPSIS
+        #include <pthread.h>
+
+        int pthread_create(
+            pthread_t *thread,              /* out */ /* thread ID */
+            const pthread_attr_t *attr,     /* in */ /* attr of new thread, if NULL using default */
+            void *(*start_routine) (void *),/* in */ /* thread routine */
+            void *arg                       /* in */ /* start_routine sole arg, using addr, using struct */
+        );
+
+        Compile and link with -pthread.
+
+DESCRIPTION
+       The  pthread_create()  function  starts  a  new thread in the calling process.  The new thread starts execution by invoking start_rou‐
+       tine(); arg is passed as the sole argument of start_routine().
+
+详见：man pthread_create
+```
+
+#### pthread_join
+
+```C
+SYNOPSIS
+        #include <pthread.h>
+
+        int pthread_join(
+            pthread_t thread,/* in */ /* thread ID */
+            void **retval    /* out */ /* return value from start_routine, if NULL, ignore */
+        );
+
+        Compile and link with -pthread.
+
+DESCRIPTION
+       The  pthread_join()  function  waits  for  the  thread  specified by thread to terminate.  If that thread has already terminated, then
+        pthread_join() returns immediately.  The thread specified by thread must be joinable.
+
+详见：man pthread_join
+```
+
+#### 为什么能同时等待多个线程
+
+```C
+for (thread = 0; thread < thread_count; thread++)
+    pthread_join(thread_handles[thread], NULL);
+```
+
+当程序运行到pthread_join(thread_handle[0], NULL)时就被阻塞，等线程0运行结束后，继续等待线程1，以此类推。
+
+注意到`If that thread has already terminated, then pthread_join() returns immediately`
+
+线程在被创建后就可以开始运行，实际的结果就是阻塞至所有线程中最晚结束的线程返回
+
+#### 如何定义start_routine函数
+
+```C
+void* Pth_hello(void* rank);
+```
+
+Pth_hello形式固定，只接受一个参数，且必须为void\*指针，返回值也必须是void\*指针，都代表一个纯地址
+
+参数和返回值在使用前要使用强制类型转换
+
+实际上*start_routine = Pth_hello，start_routine为一个函数指针，指向Pth_hello的起始地址
+
+若希望使用多个参数，可以将多个参数定义为一个结构体
+
+#### 线程执行的顺序
+
+线程执行没有固定的顺序，在线程被创建完成后，其会被设置为就绪态，等待系统的调度，线程执行的顺序都由系统调度决定
+
+#### printf是线程安全的吗
+
+```C
+man 3 printf
+```
+
+是线程安全的
+
+```C
+make D=DEBUG && ./pth_hello 2
+```
+
 #### src
 
 ```C
@@ -103,6 +195,15 @@ void* Pth_hello(void* rank){
     long my_rank = (long)rank;
 
     printf("Hello from thread %ld of %d\n", my_rank, thread_count);
+
+    #ifdef DEBUG /* ? is printf thread safe ? probably yes */
+    int my_count = 100;
+    while(my_count--)
+        if (my_rank == 0)
+            printf("Thread [%ld] %s\n", my_rank, "0000000000000000000000000000000000000000");
+        else
+            printf("Thread [%ld] %s\n", my_rank, "1111111111111111111111111111111111111111");
+    #endif
 
     return NULL;
 } /* Hello */
