@@ -19,13 +19,12 @@ int main(int argc, char* argv[]){
     clock_t st_time, ed_time;
     st_time = time(NULL);
 
-    long thread; /* use long in case of 64-bit system */
+    long thread;
     pthread_t* thread_handles;
 
-    /* Get number of all threads from command line */
     thread_count = strtol(argv[1], NULL, 10);
 
-    pthread_mutex_init(&lock, NULL);
+    pthread_mutex_init(&lock, NULL); /* init mutex */
 
     thread_handles = malloc(thread_count*sizeof(pthread_t));
 
@@ -74,7 +73,7 @@ void* Pth_sum(void* rank){
     printf("Thread [%ld] mysum: %.10lf\n", my_rank, my_sum);
     #endif
 
-    pthread_mutex_lock(&lock);
+    pthread_mutex_lock(&lock); /* using mutex */
     sum += my_sum;
     pthread_mutex_unlock(&lock);
 

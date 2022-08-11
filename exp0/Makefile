@@ -1,15 +1,24 @@
-.PHONY: all  clean  log
+# 自动编译当前目录下所有C文件为对应的二进制文件
+# Usage: make [options]
+# options:
+# 	D=DEFINE	#define DEFINE in C
+
 SRC = $(wildcard *.c)
 BIN = $(SRC:%.c=%)
 
 CC = gcc
 CFLAGS = -Wall -g -lpthread
 
-all:
-	$(CC) $(CFLAGS) -o $(BIN) $(SRC)
+all: $(BIN)
 
-log:
-	$(CC) -DLOG $(CFLAGS) -o $(BIN) $(SRC)
+ifndef D
+$(BIN): %:%.c
+	$(CC) $(CFLAGS) $^ -o $@
+else
+$(BIN): %:%.c
+	$(CC) -D$(D) $(CFLAGS) $^ -o $@
+endif
 
+.PHONY: clean
 clean:
-	rm  $(BIN)
+	-rm $(BIN)

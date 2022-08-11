@@ -6,6 +6,7 @@
 #define m 10000
 #define n 10000
 
+/* Global variables */
 int thread_count;
 double A[m][n];
 double y[m];
@@ -20,12 +21,11 @@ int main(int argc, char* argv[]){
     }
     
     clock_t st_time, ed_time;
-    st_time = time(NULL);
+    st_time = time(NULL); /* start the timer */
 
-    long thread; /* use long in case of 64-bit system */
+    long thread;
     pthread_t* thread_handles;
 
-    /* Get number of all threads from command line */
     thread_count = strtol(argv[1], NULL, 10);
 
     thread_handles = malloc(thread_count*sizeof(pthread_t));
@@ -38,10 +38,10 @@ int main(int argc, char* argv[]){
 
     free(thread_handles);
 
-    ed_time = time(NULL);
+    ed_time = time(NULL); /* end the timer */
 
     printf(
-        "Thread[main] Using [\033[31m%d\033[0m] threads, total time: [\033[31m%ld\033[0m] s\n", thread_count, ed_time - st_time
+        "Thread [main] Using [\033[31m%d\033[0m] threads, total time: [\033[31m%ld\033[0m] s\n", thread_count, ed_time - st_time
     );
 
     return 0;
@@ -50,15 +50,15 @@ int main(int argc, char* argv[]){
 void* Pth_mat_vect(void* rank){
     long my_rank = (long)rank;
     int i, j;
-    int local_m = m / thread_count;
-    int my_first_row = my_rank * local_m;
-    int my_last_row = (my_rank+1) * local_m - 1;
+    int local_m = m/thread_count;
+    int my_first_row = my_rank*local_m;
+    int my_last_row = (my_rank+1)*local_m-1;
 
     #ifdef LOG
-    printf("Thread[%ld]: calc from %d to %d\n", my_rank, my_first_row, my_last_row);
+    printf("Thread [%ld]: calc from row:%d to row:%d\n", my_rank, my_first_row, my_last_row);
     #endif
 
-    for (i = my_first_row; i <= my_last_row; i++) {
+    for (i = my_first_row; i <= my_last_row; i++){
         y[i] = 0.0;
         for (j = 0; j < n; j++)
             y[i] += A[i][j]*x[j];

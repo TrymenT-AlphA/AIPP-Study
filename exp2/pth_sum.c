@@ -18,17 +18,15 @@ int main(int argc, char* argv[]){
     clock_t st_time, ed_time;
     st_time = time(NULL);
 
-    long thread; /* use long in case of 64-bit system */
+    long thread;
     pthread_t* thread_handles;
 
-    /* Get number of all threads from command line */
     thread_count = strtol(argv[1], NULL, 10);
 
     thread_handles = malloc(thread_count*sizeof(pthread_t));
 
     for (thread = 0; thread < thread_count; thread++)
         pthread_create(&thread_handles[thread], NULL, Pth_sum, (void*)thread);
-
 
     for (thread = 0; thread < thread_count; thread++)
         pthread_join(thread_handles[thread], NULL);
@@ -70,7 +68,7 @@ void* Pth_sum(void* rank){
     printf("Thread [%ld] mysum: %.10lf\n", my_rank, my_sum);
     #endif
 
-    while (flag != my_rank);
+    while (flag != my_rank); /* spin */
     sum += my_sum;
     flag = (flag+1) % thread_count;
 

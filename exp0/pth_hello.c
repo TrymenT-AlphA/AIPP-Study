@@ -8,12 +8,12 @@ int thread_count;
 void* Pth_hello(void* rank); /* Thread function */
 
 int main(int argc, char* argv[]){
-    if (argc <= 1){
+    if (argc <= 1){ /* error input */
         printf("Usage: ./a.out thread_count\n");
         return 0;
     }
 
-    long thread; /* use long in case of 64-bit system */
+    long thread;
     pthread_t* thread_handles;
 
     /* Get number of all threads from command line */
@@ -35,7 +35,7 @@ int main(int argc, char* argv[]){
 } /* main */
 
 void* Pth_hello(void* rank){
-    long my_rank = (long) rank; /* use long in case of 64-bit system */
+    long my_rank = (long)rank;
 
     printf("Hello from thread %ld of %d\n", my_rank, thread_count);
 
