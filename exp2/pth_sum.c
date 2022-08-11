@@ -5,12 +5,12 @@
 int thread_count, flag;
 double sum;
 
-#define n 100000000
+#define n 1E8
 
 void* Pth_sum(void* rank);
 
 int main(int argc, char* argv[]){
-    if (argc <= 1) {
+    if (argc <= 1){
         printf("Usage: ./a.out thread_count\n");
         return 0;
     }
