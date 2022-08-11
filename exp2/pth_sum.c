@@ -5,7 +5,7 @@
 int thread_count, flag;
 double sum;
 
-#define n 1E8
+#define n 0xFFFFFFFF
 
 void* Pth_sum(void* rank);
 
@@ -15,8 +15,8 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    int st_time, ed_time;
-    st_time = clock();
+    clock_t st_time, ed_time;
+    st_time = time(NULL);
 
     long thread; /* use long in case of 64-bit system */
     pthread_t* thread_handles;
@@ -29,16 +29,17 @@ int main(int argc, char* argv[]){
     for (thread = 0; thread < thread_count; thread++)
         pthread_create(&thread_handles[thread], NULL, Pth_sum, (void*)thread);
 
+
     for (thread = 0; thread < thread_count; thread++)
         pthread_join(thread_handles[thread], NULL);
 
     free(thread_handles);
 
-    ed_time = clock();
+    ed_time = time(NULL);
 
     printf(
-        "Thread [main] Using [\033[31m%d\033[0m] threads, total time: [\033[31m%lf\033[0m] ms\n", 
-        thread_count, (double)(ed_time - st_time)*1000 / CLOCKS_PER_SEC
+        "Thread [main] Using [\033[31m%d\033[0m] threads, total time: [\033[31m%ld\033[0m] s\n", 
+        thread_count, (ed_time - st_time)
     );
     printf("Thread [main] pi: %.10lf\n", 4.0*sum);
 
