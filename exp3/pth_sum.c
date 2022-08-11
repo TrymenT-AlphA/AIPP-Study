@@ -32,7 +32,6 @@ int main(int argc, char* argv[]){
     for (thread = 0; thread < thread_count; thread++)
         pthread_create(&thread_handles[thread], NULL, Pth_sum, (void*)thread);
 
-
     for (thread = 0; thread < thread_count; thread++)
         pthread_join(thread_handles[thread], NULL);
 
@@ -74,8 +73,10 @@ void* Pth_sum(void* rank){
     #ifdef LOG
     printf("Thread [%ld] mysum: %.10lf\n", my_rank, my_sum);
     #endif
+
     pthread_mutex_lock(&lock);
     sum += my_sum;
     pthread_mutex_unlock(&lock);
+
     return NULL;
 } /* Pth_sum */

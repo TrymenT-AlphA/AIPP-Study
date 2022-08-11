@@ -66,11 +66,13 @@ void* Pth_sum(void* rank){
     for (i = my_first_i; i < my_last_i; i++, factor = -factor)
         my_sum += factor/(2*i+1);
 
-    while (flag != my_rank);
     #ifdef LOG
     printf("Thread [%ld] mysum: %.10lf\n", my_rank, my_sum);
     #endif
+
+    while (flag != my_rank);
     sum += my_sum;
     flag = (flag+1) % thread_count;
+
     return NULL;
 } /* Pth_sum */

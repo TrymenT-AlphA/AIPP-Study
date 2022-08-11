@@ -13,8 +13,8 @@ double x[n];
 
 void* Pth_mat_vect(void* rank);
 
-int main(int argc, char* argv[]) {
-    if (argc <= 1) {
+int main(int argc, char* argv[]){
+    if (argc <= 1){
         printf("Usage: ./a.out thread_count\n");
         return 0;
     }
@@ -45,9 +45,9 @@ int main(int argc, char* argv[]) {
     );
 
     return 0;
-}
+} /* main */
 
-void* Pth_mat_vect(void* rank) {
+void* Pth_mat_vect(void* rank){
     long my_rank = (long)rank;
     int i, j;
     int local_m = m / thread_count;
