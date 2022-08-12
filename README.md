@@ -138,7 +138,7 @@ thread_function形式固定，只接受一个参数，且必须为void\*指针�
 
 #### printf是线程安全的吗
 
-是线程安全的
+是线程安全的。
 
 ```C
 man 3 printf
@@ -297,13 +297,13 @@ Thread [main] Using [4] threads, total time: [0] s
 ./pth_mat_vect 4  0.27s user 0.00s system 386% cpu 0.070 total
 ```
 
-> 2核至3核的性能几乎没有提升，并且3核占用了更多的cpu资源，应该是伪共享产生了大量不必要的访存操作。我的cpu每个核两个线程，当使用到第三个线程时就必须考虑两个核之间的Cache一致性问题
+> 2核至3核的性能几乎没有提升，并且3核占用了更多的cpu资源，应该是伪共享产生了大量不必要的访存操作。我的cpu每个核两个线程，当使用到第三个线程时就必须考虑两个核之间的Cache一致性问题。
 
 ### Pth_sum.c
 
 #### 临界区
 
-更新共享资源的代码段，一次只允许一个线程执行该代码端。
+更新共享资源的代码段，一次只允许一个线程执行该代码段。
 
 #### 忙等待
 
@@ -313,7 +313,7 @@ while !Condiction; /* 忙等待spin */
 /* Critical zone */
 ```
 
-忙等待可以实现临界区，并且能够保证线程按顺序进入临界区，但是会占用较多的cpu资源
+忙等待可以实现临界区，并且能够保证线程按顺序进入临界区，但是会占用较多的cpu资源。
 
 > 编译优化可以更改某些指令的执行顺序，这可能无法保证忙等待的正确性！
 
@@ -416,11 +416,11 @@ Thread [main] pi: 3.1415926534
 ./pth_sum 4  11.53s user 0.00s system 398% cpu 2.893 total
 ```
 
-> 多线程程序的正确性没有问题，也得到了性能提升
+> 多线程程序的正确性没有问题，也得到了性能提升。
 
 #### 互斥量
 
-忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现互斥量的方法是使用互斥量。
+忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现互斥量的方法是使用互斥量。互斥量有且只有两种状态，lock状态和unlock状态。一个互斥量同一时刻只能被一个线程拥有，当它被其他线程拥有时，状态为lock状态，否则为unlock状态。pthread_mutex_init将一个互斥量初始化，并设置为unlock状态。
 
 #### pthread_mutex_t
 
@@ -505,7 +505,7 @@ pthread_mutex_lock(&mut);
 pthread_mutex_unlock(&mut);
 ```
 
-> 简而言之，临界区就像厕所，互斥量就是厕所的锁。你不想和别人一起上厕所，就要先拿到锁，然后进厕所上锁，上完厕所把锁放回原处，不然别人上不了厕所（笑
+> 简而言之，临界区就像厕所，互斥量就是厕所的锁。你不想和别人一起上厕所，就要先拿到锁，然后进厕所上锁，上完厕所把锁放回原处，不然别人上不了厕所（笑。
 
 #### Pth_sum_2.c
 
@@ -554,7 +554,7 @@ Thread [main] pi: 3.1415926534
 ./pth_sum 4  11.54s user 0.00s system 396% cpu 2.910 total
 ```
 
-> 貌似和忙等待没有多大提升，不妨将Pth_sum_0.c改成互斥量实现看看效果
+> 貌似和忙等待没有多大提升，不妨将Pth_sum_0.c改成互斥量实现看看效果。
 
 #### Pth_sum_3.c
 
@@ -590,4 +590,187 @@ Thread [main] pi: 3.1415926534
 ./pth_sum_3 4  278.95s user 396.18s system 356% cpu 3:09.38 total
 ```
 
-> 事实证明，多线程下互斥量确实快，占用cpu也较少
+> 事实证明，多线程下互斥量确实快，占用cpu也较少。
+
+### Pth_msg.c
+
+#### 信号量
+
+信号量是一种特殊的无符号整数，实现了原子性的+1`sem_post`和原子性的-1`sem_wait`。
+
+#### 生产者-消费者模型
+
+生产者不断向仓库中放入商品，消费者不断从仓库中取出商品。在这个模型中，所有生产者和所有消费者之间是并行的，仓库是共享资源区。
+1. 生产者和生产者之间是互斥的
+2. 消费者和消费者之间是互斥的
+3. 生产者和消费者之间是同步的
+
+#### 发送消息
+
+利用信号量实现任意一个进程与其他进程之间的通信。不妨改进书中的例子，实现一个真正的生产者-消费者模型。仓库使用队列来描述
+
+```C
+    生产者  -\  +--------------+  -\   消费者
+    生产者  -->       仓库        -->  消费者
+    生产者  -/  +--------------+  -/   消费者
+```
+
+#### 互斥量和信号量
+
+互斥量可以视为弱化版的信号量，其取值只能是0和1。互斥量主要用来解决临界区的互斥问题，而信号量主要用来实现线程间的同步问题。
+
+#### sem_init
+
+##### SYNOPSIS
+
+```C
+#include <semaphore.h>
+
+int sem_init(
+    sem_t *sem,        /* in */ /* unnamed  semaphore */
+    int pshared,       /* in */ /* 0 shared between threads, else processes */
+    unsigned int value /* in */ /* init value */
+);
+
+Link with -pthread.
+```
+
+##### DESCRIPTION
+
+> sem_init()  initializes  the  unnamed  semaphore at the address pointed to by sem. The value argument specifies the initial value for the semaphore.
+
+#### sem_post
+
+##### SYNOPSIS
+
+```C
+#include <semaphore.h>
+
+int sem_post(
+    sem_t *sem /* in */ /* initialized sem */
+);
+
+Link with -pthread.
+```
+
+##### DESCRIPTION
+
+> sem_post() increments (unlocks) the semaphore pointed to by sem. If the semaphore's value consequently becomes greater than zero, then another process or thread blocked in a sem_wait(3) call will be woken up and proceed to lock the semaphore.
+
+#### sem_wait
+
+##### SYNOPSIS
+
+```C
+#include <semaphore.h>
+
+int sem_wait(
+    sem_t *sem /* in */ /* initialized sem */
+);
+
+Link with -pthread.
+```
+
+##### DESCRIPTION
+
+> sem_wait() decrements (locks) the semaphore pointed to by sem. If the semaphore's value is greater than zero, then the decrement proceeds, and the function returns, immediately. If the semaphore currently has the value zero, then the call blocks until either it becomes possible to perform the decrement (i.e., the semaphore value rises above zero), or a signal handler interrupts the call.
+
+#### 伪代码
+
+```C
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+struct Message{
+    long dst_thread;
+    char msg[256];
+};
+
+struct Queue{
+    unsigned long fron, rear;
+    unsigned long msize;
+    struct Message buffer[256];
+} que;
+
+int init_que(struct Queue* _que);/* 0 success */
+int full_que(struct Queue* _que);/* 1 full, else 0 */
+int empty_que(struct Queue* _que);/* 1 empty, else 0 */
+int push_que(struct Queue* _que, struct Message msg);/* 0 success */
+int pop_que(struct Queue* _que, struct Message* msg);/* 0 success */
+int peek_que(struct Queue* _que, struct Message* msg);/* 0 success */
+
+void* Pth_msg(void* rank);
+
+int thread_count;
+sem_t mutex, msg_num;
+
+int main(int argc, char* argv[]){
+    long thread;
+    pthread_t* thread_handles;
+
+    sem_init(&mutex, 0, 1);
+    sem_init(&msg_num, 0, 0);
+    init_que(&que);
+
+    ...; /* create and join threads */
+
+    return 0;
+}
+
+void* Pth_msg(void* rank){
+    long my_rank = (long)rank;
+    struct Message message;
+
+    message.dst_thread = (my_rank+1)%thread_count;
+    sprintf(message.msg, "Hello! thread [%ld] , i'm thread [%ld]", message.dst_thread, my_rank);
+
+    sem_wait(&mutex); /* enter critical zone */
+    push_que(&que, message);
+    sem_post(&mutex); /* leave critical zone */
+    sem_post(&msg_num); /* produce a msg */
+
+    printf("Thread [%ld]: sended message to thread [%ld]\n", my_rank, message.dst_thread);
+
+    while(1){
+        sem_wait(&msg_num); /* consume a msg */
+        peek_que(&que, &message);
+        if (message.dst_thread != my_rank)
+            sem_post(&msg_num);
+        else{
+            sem_wait(&mutex); /* enter critical zone */
+            pop_que(&que, NULL);
+            sem_post(&mutex); /* leave critical zone */
+
+            printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
+            break;
+        }
+    }
+
+    return NULL;
+}
+...; /* struct Queue operation */
+```
+
+#### 输出
+
+```C
+$ ./pth_msg 
+Thread [0]: sended message to thread [1]
+Thread [1]: sended message to thread [2]
+Thread [1]: received a message: Hello! thread [1] , i'm thread [0]
+Thread [2]: sended message to thread [3]
+Thread [2]: received a message: Hello! thread [2] , i'm thread [1]
+Thread [3]: sended message to thread [4]
+Thread [5]: sended message to thread [6]
+Thread [3]: received a message: Hello! thread [3] , i'm thread [2]
+Thread [4]: sended message to thread [5]
+Thread [4]: received a message: Hello! thread [4] , i'm thread [3]
+Thread [6]: sended message to thread [7]
+Thread [7]: sended message to thread [0]
+Thread [5]: received a message: Hello! thread [5] , i'm thread [4]
+Thread [7]: received a message: Hello! thread [7] , i'm thread [6]
+Thread [0]: received a message: Hello! thread [0] , i'm thread [7]
+Thread [6]: received a message: Hello! thread [6] , i'm thread [5]
+```
