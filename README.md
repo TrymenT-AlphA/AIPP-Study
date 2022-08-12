@@ -7,7 +7,7 @@
 
 实验环境
 
-> windows subsystem for linux 2
+> windows subsystem for linux 2 WSL: Ubuntu-22.04
 
 安装Pthreads手册
 
@@ -223,6 +223,27 @@ Hello from thread 2 of 4
 
 ### Pth_mat_vect.c
 
+#### 计算矩阵向量乘法
+
+$$
+y_i = \sum_{j=0}^{n-1}a_{ij}x_j
+$$
+
+串行程序
+
+```C
+/* for each row of A */
+for (i = 0; i < m; i++){
+    y[i] = 0.0;
+    /* for each element of the row and each element of x */
+    for (j = 0; j < n; j++)
+        y[i] += A[i][j]*x[j]
+}
+```
+
+通过将外层循环分块，每个线程计算y的一部分，可以很容易实现并行化。
+将A，x，y都作为全局变量，实际上并没有产生竞争条件，并且可以方便输入输出
+
 #### src
 
 ```C
@@ -264,6 +285,17 @@ PS> time ./pth_mat_vect 1
 Thread[0]: calc from row:0 to row:9999
 Thread [main] Using [1] threads, total time: [0] s
 ./pth_mat_vect 1  0.26s user 0.00s system 96% cpu 0.272 total
+PS> time ./pth_mat_vect 2
+Thread [0]: calc from row:0 to row:5000
+Thread [1]: calc from row:5000 to row:10000
+Thread [main] Using [2] threads, total time: [1] s
+./pth_mat_vect 2  0.25s user 0.01s system 194% cpu 0.134 total
+PS> time ./pth_mat_vect 3
+Thread [0]: calc from row:0 to row:3333
+Thread [1]: calc from row:3333 to row:6666
+Thread [2]: calc from row:6666 to row:9999
+Thread [main] Using [3] threads, total time: [0] s
+./pth_mat_vect 3  0.34s user 0.00s system 254% cpu 0.134 total
 PS> time ./pth_mat_vect 4
 Thread[0]: calc from row:0 to row:2499
 Thread[1]: calc from row:2500 to row:4999
@@ -273,7 +305,29 @@ Thread [main] Using [4] threads, total time: [0] s
 ./pth_mat_vect 4  0.27s user 0.00s system 386% cpu 0.070 total
 ```
 
+2核至3核的性能几乎没有提升，并且3核占用了更多的cpu资源，应该是伪共享产生了大量不必要的访存操作。我的cpu每个核两个线程，当使用到第三个线程时就必须考虑两个核之间的同步问题
+
 ### Pth_sum
+
+#### 临界区
+
+更新共享资源的代码段，一次只允许一个线程执行该代码端。
+
+#### 忙等待
+
+```C
+y = Compute(my_rank);
+while !Condiction;
+/* Critical zone */
+```
+
+忙等待可以实现临界区，并且能够保证线程按顺序进入临界区，但是会占用较多的cpu资源
+
+#### 多线程求和
+
+$$
+\frac{\pi}{4}=1-\frac{1}{3}+\frac{1}{5}-\frac{1}{7}+···+(-1)^n\frac{1}{2n+1}
+$$
 
 #### src
 
@@ -330,6 +384,10 @@ Thread [main] pi: 3.1415926534
 ```
 
 ### Pth_sum(2)
+
+#### 互斥量
+
+
 
 #### src
 
