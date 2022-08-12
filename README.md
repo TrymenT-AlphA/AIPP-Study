@@ -750,7 +750,7 @@ void* Pth_msg(void* rank){
         else{ /* thread 4,5,6,7 producer */
             if (rand()%10 != 9)
                 sleep(1);
-            else{ /* 1/100 send a message */ /* 1+1=9 :) */
+            else{ /* 1/10 send a message */ /* 1+1=9 :) */
                 message.dst_thread = rand()%(thread_count/2);
                 sprintf(message.msg, "Hello! thread [%ld] , i'm thread [%ld]", message.dst_thread, my_rank);
                 sem_wait(&mutex); /* enter critical zone */
