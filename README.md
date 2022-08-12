@@ -203,7 +203,6 @@ void* Pth_hello(void* rank){
 
     return NULL;
 } /* Hello */
-
 ```
 
 #### 输出
@@ -324,12 +323,68 @@ $$
 \frac{\pi}{4}=1-\frac{1}{3}+\frac{1}{5}-\frac{1}{7}+···+(-1)^n\frac{1}{2n+1}
 $$
 
-####  伪代码
+#### Pth_sum_0.c
+
+##### 伪代码
+
+```c
+void* Pth_sum(void* rank){
+    long my_rank = (long)rank;
+    double factor;
+    long long i;
+    long long my_n = n/thread_count;
+    long long my_first_i = my_n*my_rank;
+    long long my_last_i = my_first_i+my_n;
+    
+    ...; /* log */
+
+    if (my_first_i % 2 == 0)
+        factor = 1.0;
+    else
+        factor = -1.0;
+
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor){
+        /* ！！频繁的spin会带来极大的性能损失！！ */
+        while (flag != my_rank); /* spin */
+        sum += factor/(2*i+1);
+        flag = (flag+1) % thread_count;
+    }
+
+    return NULL;
+} /* Pth_sum */
+```
+
+##### 输出
+
+```C
+$ time ./pth_sum_0 1
+Thread [0] my_first_i: 0, my_last_i: 4294967295
+Thread [main] Using [1] threads, total time: [20] s
+Thread [main] pi: 3.1415926538
+./pth_sum_0 1  19.58s user 0.00s system 99% cpu 19.585 total
+$ time ./pth_sum_0 4
+Thread [0] my_first_i: 0, my_last_i: 1073741823
+Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
+Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
+Thread [3] my_first_i: 3221225469, my_last_i: 4294967292
+Thread [main] Using [4] threads, total time: [640] s
+Thread [main] pi: 3.1415926534
+./pth_sum_0 4  2559.37s user 0.00s system 399% cpu 10:39.85 total
+```
+
+> ！！频繁的spin会带来极大的性能损失！！
+
+#### Pth_sum_1.c
+
+#####  伪代码
 
 ```C
 void* Pth_sum(void* rank){
     ...;
 
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor)
+        my_sum += factor/(2*i+1);
+    
     while (flag != my_rank); /* spin */
     sum += my_sum;
     flag = (flag+1) % thread_count;
@@ -341,13 +396,13 @@ void* Pth_sum(void* rank){
 #### 输出
 
 ```c
-$ time ./pth_sum 1
+$ time ./pth_sum_1 1
 Thread [0] my_first_i: 0, my_last_i: 4294967295
 Thread [0] mysum: 0.7853981635
 Thread [main] Using [1] threads, total time: [12] s
 Thread [main] pi: 3.1415926538
 ./pth_sum 1  11.15s user 0.00s system 99% cpu 11.156 total
-$ time ./pth_sum 4
+$ time ./pth_sum_1 4
 Thread [0] my_first_i: 0, my_last_i: 1073741823
 Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
 Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
@@ -363,13 +418,98 @@ Thread [main] pi: 3.1415926534
 
 > 多线程程序的正确性没有问题，也得到了性能提升
 
-### Pth_sum(2)
-
 #### 互斥量
 
 忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现互斥量的方法是使用互斥量。
 
-#### 伪代码
+#### pthread_mutex_t
+
+##### DESCRIPTION
+
+> A mutex is a MUTual EXclusion device, and is useful for protecting shared data  structures from concurrent modifications, and implementing critical sections and monitors. A mutex has two possible states: unlocked (not owned by any thread), and locked (owned by one thread). A mutex can never be owned by two different threads simultaneously. A thread attempting to lock a mutex that is already locked by another thread is suspended until the owning thread unlocks the mutex first. 
+
+#### pthread_mutex_init
+
+```C
+man pthread_mutex_init
+```
+
+##### SYNOPSIS
+
+```C
+#include <pthread.h>
+
+int pthread_mutex_init(
+    pthread_mutex_t *mutex, /* in */ /* pointer to mutex(pthread_mutex_t) */
+    const pthread_mutexattr_t *mutexattr /* in */ /* if NULL, default */
+);
+```
+
+##### DESCRIPTION
+
+> pthread_mutex_init initializes the mutex object pointed to by mutex according to the mutex attributes specified in mutexattr. If mutexattr is NULL, default attributes are used instead.
+
+#### pthread_mutex_lock
+
+```C
+man pthread_mutex_lock
+```
+
+##### SYNOPSIS
+
+```c
+#include <pthread.h>
+
+int pthread_mutex_lock(
+    pthread_mutex_t *mutex /* in */ /* pointer to mutex(pthread_mutex_t) */
+);
+```
+
+##### DESCRIPTION
+
+> pthread_mutex_lock locks the given mutex. If the mutex is currently unlocked, it becomes locked and owned by the calling thread, and pthread_mutex_lock returns immediately. If the mutex is already locked by another thread, pthread_mutex_lock suspends the calling thread until the mutex is unlocked.
+
+#### pthread_mutex_unlock
+
+```C
+man pthread_mutex_unlock
+```
+
+##### SYNOPSIS
+
+```c
+#include <pthread.h>
+
+int pthread_mutex_unlock(
+    pthread_mutex_t *mutex /* in */ /* pointer to mutex(pthread_mutex_t) */
+);
+```
+
+##### DESCRIPTION
+
+> pthread_mutex_unlock unlocks the given mutex. The mutex is assumed to be locked and owned by the calling thread on entrance to pthread_mutex_unlock. If the  mutex is of the `fast` kind, pthread_mutex_unlock  always  returns  it  to  the unlocked state. If it is of the `recursive` kind, it decrements the locking count of the mutex (number of pthread_mutex_lock operations performed on it by the calling thread), and only when this count reaches zero is the mutex actually unlocked.
+
+#### demo
+
+```C
+/* A shared global variable x can be protected by a mutex as follows: */
+int x;
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+
+/* 
+All accesses and modifications to x should be bracketed by calls to  
+pthread_mutex_lock and pthread_mutex_unlock as follows:
+*/
+pthread_mutex_lock(&mut);
+/* operate on x */
+pthread_mutex_unlock(&mut);
+```
+
+> 简而言之，临界区就像厕所，互斥量就是厕所的锁。你不想和别人一起上厕所，就要先拿到锁，然后进厕所上锁，上完厕所把锁放回原处，不然别人上不了厕所（笑
+
+#### Pth_sum_2.c
+
+##### 伪代码
 
 ```C
 pthread_muext_t lock;
@@ -391,7 +531,7 @@ void* Pth_sum(void* rank){
 } /* Pth_sum */
 ```
 
-#### 输出
+##### 输出
 
 ```C
 $ time ./pth_sum 1
@@ -414,5 +554,40 @@ Thread [main] pi: 3.1415926534
 ./pth_sum 4  11.54s user 0.00s system 396% cpu 2.910 total
 ```
 
-> 使用互斥量确实比忙等待少使用了2%的cpu（逃
+> 貌似和忙等待没有多大提升，不妨将Pth_sum_0.c改成互斥量实现看看效果
 
+#### Pth_sum_3.c
+
+##### 伪代码
+
+```C
+void* Pth_sum(void* rank){
+    ...;
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor)
+        pthread_mutex_lock(&lock); /* using mutex */
+        sum += factor/(2*i+1);
+        pthread_mutex_unlock(&lock);
+
+    return NULL;
+} /* Pth_sum */
+```
+
+##### 输出
+
+```C
+$ time ./pth_sum_3 1
+Thread [0] my_first_i: 0, my_last_i: 4294967295
+Thread [main] Using [1] threads, total time: [45] s
+Thread [main] pi: 3.1415926538
+./pth_sum_3 1  44.82s user 0.00s system 99% cpu 44.830 total
+$ time ./pth_sum_3 4
+Thread [0] my_first_i: 0, my_last_i: 1073741823
+Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
+Thread [3] my_first_i: 3221225469, my_last_i: 4294967292
+Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
+Thread [main] Using [4] threads, total time: [189] s
+Thread [main] pi: 3.1415926534
+./pth_sum_3 4  278.95s user 396.18s system 356% cpu 3:09.38 total
+```
+
+> 事实证明，多线程下互斥量确实快，占用cpu也较少
