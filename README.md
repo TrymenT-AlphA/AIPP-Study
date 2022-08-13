@@ -877,11 +877,53 @@ void* Thread_work(...){
 #### 伪代码
 
 ```C
+...;
 
+int main(int argc, char* argv[]){
+    ...;
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond, NULL);
+    ...;
+}
+
+void* Thread_work(void* rank){
+    long my_rank = (long)rank;
+
+    pthread_mutex_lock(&mutex);
+    counter++;
+    if (counter == thread_count){
+        counter = 0;
+        printf("Thread [%ld]: broadcast\n", my_rank);
+        pthread_cond_broadcast(&cond);
+    }
+    else{
+        printf("Thread [%ld]: waitting\n", my_rank);
+        while(pthread_cond_wait(&cond, &mutex) != 0);
+        printf("Thread [%ld]: passing\n", my_rank);
+    }
+    pthread_mutex_unlock(&mutex);
+
+    return NULL;
+}
 ```
 
 #### 输出
 
 ```C
-
+$ ./pth_barrier 8 
+Thread [0]: waitting
+Thread [2]: waitting
+Thread [1]: waitting
+Thread [3]: waitting
+Thread [4]: waitting
+Thread [5]: waitting
+Thread [6]: waitting
+Thread [7]: broadcast
+Thread [6]: passing
+Thread [2]: passing
+Thread [1]: passing
+Thread [3]: passing
+Thread [4]: passing
+Thread [5]: passing
+Thread [0]: passing
 ```
