@@ -282,6 +282,16 @@ Thread [main] Using [4] threads, total time: [0] s
 ```
 
 > 2核至3核的性能几乎没有提升，并且3核占用了更多的cpu资源，应该是伪共享产生了大量不必要的访存操作。我的cpu每个核两个线程，当使用到第三个线程时就必须考虑两个核之间的Cache一致性问题。
+> #----------------------------------------------------------#
+> 事后查了一下
+> ```C
+> $ cat /sys/devices/system/cpu/cpu0/cache/index\*/type
+> Data
+> Instruction
+> Unified /* 统一的 */
+> Unified /* 统一的 */
+> ```
+> 我有8个cpu（cpu0~cpu7），每个cpu有自己独立的data cache和独立的instruction cache，cpu之间的二级cache和三级cache是共享的。奇怪的是一个cpu能分出两个线程（或者说两个逻辑cpu），这两个线程之间是共享data cache和instruction cache的，因此单线程到双线程的提升也很明显，但是双核到三核几乎没有提升，这也验证了之前的想法。
 
 ### Pth_sum.c
 
