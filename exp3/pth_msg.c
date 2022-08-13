@@ -56,6 +56,7 @@ int main(int argc, char* argv[]){
 void* Pth_msg(void* rank){
     long my_rank = (long)rank;
     struct Message message;
+    unsigned int seed = my_rank;
 
     while(1){ /* This program keep running */
         if (my_rank < 4){ /* thread 0,1,2,3 consumer */
@@ -64,23 +65,23 @@ void* Pth_msg(void* rank){
             if (message.dst_thread != my_rank)
                 sem_post(&msg_num);
             else{
+                printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
                 sem_wait(&mutex); /* enter critical zone */
                 pop_que(&que, NULL);
                 sem_post(&mutex); /* leave critical zone */
-                printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
             }
         }
         else{ /* thread 4,5,6,7 producer */
-            if (rand()%10 != 9)
+            if (rand_r(&seed)%10 != 9)
                 sleep(1);
             else{ /* 1/100 send a message */ /* 1+1=9 */
-                message.dst_thread = rand()%(thread_count/2);
+                message.dst_thread = rand_r(&seed)%(thread_count/2);
                 sprintf(message.msg, "Hello! thread [%ld] , i'm thread [%ld]", message.dst_thread, my_rank);
                 sem_wait(&mutex); /* enter critical zone */
                 push_que(&que, message);
                 sem_post(&mutex); /* leave critical zone */
-                sem_post(&msg_num); /* produce a message */
                 printf("Thread [%ld]: sended message to thread [%ld]\n", my_rank, message.dst_thread);
+                sem_post(&msg_num); /* produce a message */
             }
         }
     }
