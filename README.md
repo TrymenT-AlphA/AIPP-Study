@@ -1,7 +1,7 @@
 # 并行程序设计导论 读书笔记
 
-* talk is easy, show me the code
-* read the friendly manual
+* talk is easy, show me the code.
+* read the friendly manual.
 
 ## 第四章 用Pthreads进行共享内存编程
 
@@ -661,9 +661,9 @@ void* Pth_msg(void* rank){
 
     while(1){ /* This program keep running */
         if (my_rank < 4){ /* thread 0,1,2,3 consumer */
-            sem_wait(&msg_num); /* wait for a message */
-            peek_que(&que, &message);
-            if (message.dst_thread != my_rank)
+            sem_wait(&msg_num); /* wait for a message */ /*! 这种写法并不正确，但在此处没有问题，详见读写锁 !*/
+            peek_que(&que, &message);                    /*! 这种写法并不正确，但在此处没有问题，详见读写锁 !*/
+            if (message.dst_thread != my_rank)           /*! 这种写法并不正确，但在此处没有问题，详见读写锁 !*/
                 sem_post(&msg_num);
             else{
                 sem_wait(&mutex); /* enter critical zone */
@@ -935,3 +935,89 @@ Thread [2]: pass
 Thread [4]: pass
 Thread [6]: pass
 ```
+
+### Pth_linklist.c
+
+#### 维护一个共享的复杂数据结构（单向链表）
+
+```C
+/*
+    +--------+   +---+---+   +---+---+   +---+------+
+    | head_p-|-->| 2 | ·-|-->| 5 | ·-|-->| 8 | NULL |
+    +--------+   +---+---+   +---+---+   +---+------+
+*/
+int Member(int value, struct list_node_s* head_p); /* 查找链表中值为value的节点 */
+int Insert(int value, struct list_node_s* head_p); /* 在链表的正确位置插入值为value的节点 */
+int Delete(int value, struct list_node_s* head_p); /* 删除值为value的节点 */
+```
+
+多个线程能够同时读取一个共享内存单元，只有一个线程同时能写入一个共享内存单元
+
+> 看到这里，pth_msg.c其实写的有问题
+> ```C
+> sem_wait(&msg_num); /* wait for a message */
+> peek_que(&que, &message);
+> if (message.dst_thread != my_rank)
+>     sem_post(&msg_num);
+> else{
+>     sem_wait(&mutex); /* enter critical zone */
+>     pop_que(&que, NULL);
+>     sem_post(&mutex); /* leave critical zone */
+>     printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
+> }
+> ```
+> 实际维护一个队列的时候，其中一个线程peek之后，完全有可能被系统调度暂停，然后另一个线程pop了头元素，因此无法保证程序的正确性。但是在此处，因为每个msg对应了一个线程，因此该msg只有可能被自己pop，因此在此处是可以的。实际维护一个共享数据结构时就需要`读写锁`
+
+#### 方案一 粗粒度互斥量
+
+互斥访问整个链表
+
+```C
+pthread_mutex_lock(&lock);
+Member(value);
+pthread_mutex_unlock(&lock);
+```
+
+> 这样只能串行访问链表！
+
+#### 方案二 细粒度互斥量
+
+互斥访问每个节点
+
+```C
+struct list_node_s {
+    int data;
+    struct list_node_s* next;
+    pthread_mutex_t mutex;
+}
+```
+
+> 频繁lock(unlock)导致性能严重下降，内存占用增大！
+
+#### 方案三 读写锁
+
+读写锁的思想也很简单，说到底，我们不希望 读/写 时数据被其他线程篡改。因此，当任意线程获取 读/写 锁时，阻塞尝试获取写锁的线程。同时，当一个线程获取写锁后，在它释放写锁前，链表的状态是不确定的，我们不希望这个时候的链表被其他线程 读/写，以免发生错误，因此当有线程获取写锁时，阻塞所有尝试获取 读/写 锁的线程。概括下来就是两种情况：
+1. 当读锁lock时，阻塞写
+2. 当写锁lock时，阻塞读/写
+
+> 读写锁的操作与互斥量几乎一样，此处不再赘述，详细可参考手册 `man pthread_rwlock_init` etc.
+
+```C
+pthread_rwlock_rdlock(&rwlock);
+Member(value);
+pthread_rwlock_unlock(&rwlock);
+...;
+pthread_rwlock_wrlock(&rwlock);
+Insert(value);
+pthread_rwlock_unlock(&rwlock);
+...;
+pthread_rwlock_wrlock(&rwlock);
+Delete(value);
+pthread_rwlock_unlock(&rwlock);
+```
+
+#### 性能测试
+
+1000 初始键值，100 000 个操作，80%Member，10%Insert，10%Delete（in.txt）
+
+##### 输入
