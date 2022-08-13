@@ -286,7 +286,7 @@ Thread [main] Using [4] threads, total time: [0] s
 > #-----------------------------------------------------------------------------------------------------------------#
 >
 > ```C
-> $ cat /sys/devices/system/cpu/cpu0/cache/index\*/type
+> $ cat /sys/devices/system/cpu/cpu0/cache/index*/type
 > Data
 > Instruction
 > Unified /* 统一的 */
