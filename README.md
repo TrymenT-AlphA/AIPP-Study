@@ -899,8 +899,8 @@ void* Thread_work(void* rank){
     else{
         printf("Thread [%ld]: waitting\n", my_rank);
         while(pthread_cond_wait(&cond, &mutex) != 0);
-        printf("Thread [%ld]: passing\n", my_rank);
     }
+    printf("Thread [%ld]: passing\n", my_rank);
     pthread_mutex_unlock(&mutex);
 
     return NULL;
@@ -919,18 +919,19 @@ void* Thread_work(void* rank){
 ```C
 $ ./pth_barrier 8 
 Thread [0]: waitting
-Thread [2]: waitting
 Thread [1]: waitting
-Thread [3]: waitting
-Thread [4]: waitting
 Thread [5]: waitting
+Thread [3]: waitting
+Thread [2]: waitting
+Thread [4]: waitting
 Thread [6]: waitting
 Thread [7]: broadcast
-Thread [6]: passing
-Thread [2]: passing
-Thread [1]: passing
-Thread [3]: passing
-Thread [4]: passing
-Thread [5]: passing
-Thread [0]: passing
+Thread [7]: pass
+Thread [0]: pass
+Thread [1]: pass
+Thread [5]: pass
+Thread [3]: pass
+Thread [2]: pass
+Thread [4]: pass
+Thread [6]: pass
 ```

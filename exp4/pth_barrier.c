@@ -49,8 +49,8 @@ void* Thread_work(void* rank){
     else{
         printf("Thread [%ld]: waitting\n", my_rank);
         while(pthread_cond_wait(&cond, &mutex) != 0);
-        printf("Thread [%ld]: passing\n", my_rank);
     }
+    printf("Thread [%ld]: pass\n", my_rank);
     pthread_mutex_unlock(&mutex);
 
     return NULL;
