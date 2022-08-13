@@ -639,6 +639,24 @@ Link with -pthread.
 
 > sem_init()  initializes  the  unnamed  semaphore at the address pointed to by sem. The value argument specifies the initial value for the semaphore.
 
+#### sem_destroy
+
+##### SYNOPSIS
+
+```C
+#include <semaphore.h>
+
+int sem_destroy(
+    sem_t *sem /* in */ /* unnamed  semaphore */
+);
+
+Link with -pthread.
+```
+
+##### DESCRIPTION
+
+> sem_destroy() destroys the unnamed semaphore at the address pointed to by sem.
+
 #### sem_post
 
 ##### SYNOPSIS
@@ -794,3 +812,5 @@ Thread [0]: received a message: Hello! thread [0] , i'm thread [6]
 Thread [5]: sended message to thread [3]
 Thread [3]: received a message: Hello! thread [3] , i'm thread [5]
 ```
+
+### 

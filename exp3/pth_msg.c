@@ -47,6 +47,9 @@ int main(int argc, char* argv[]){
 
     free(thread_handles);
 
+    sem_destroy(&msg_num);
+    sem_destroy(&mutex);
+
     return 0;
 }
 
