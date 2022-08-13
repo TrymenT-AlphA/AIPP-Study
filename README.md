@@ -68,12 +68,6 @@ $ time ./a.out
 #### pthread_create
 
 ```C
-man pthread_create
-```
-
-##### SYNOPSIS
-
-```C
 #include <pthread.h>
 
 int pthread_create(
@@ -86,17 +80,9 @@ int pthread_create(
 Compile and link with -pthread.
 ```
 
-##### DESCRIPTION
-
 > The pthread_create() function starts a new thread in the calling process. The new thread starts execution by invoking start_routine(); arg is passed as the sole argument of start_routine().
 
 #### pthread_join
-
-```C
-man pthread_join
-```
-
-##### SYNOPSIS
 
 ```C
 #include <pthread.h>
@@ -108,8 +94,6 @@ int pthread_join(
 
 Compile and link with -pthread.
 ```
-
-##### DESCRIPTION
 
 > The  pthread_join()  function  waits  for  the  thread  specified by thread to terminate.  If that thread has already terminated, then pthread_join() returns immediately.  The thread specified by thread must be joinable.
 
@@ -372,7 +356,7 @@ Thread [main] pi: 3.1415926534
 ./pth_sum_0 4  2559.37s user 0.00s system 399% cpu 10:39.85 total
 ```
 
-> ！！频繁的spin会带来极大的性能损失！！
+> 频繁的spin会带来极大的性能损失！
 
 #### Pth_sum_1.c
 
@@ -420,21 +404,13 @@ Thread [main] pi: 3.1415926534
 
 #### 互斥量
 
-忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现互斥量的方法是使用互斥量。互斥量有且只有两种状态，lock状态和unlock状态。一个互斥量同一时刻只能被一个线程拥有，当它被其他线程拥有时，状态为lock状态，否则为unlock状态。pthread_mutex_init将一个互斥量初始化，并设置为unlock状态。
+忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现临界区的方法是使用互斥量。互斥量有且只有两种状态，lock状态和unlock状态。一个互斥量同一时刻只能被一个线程拥有，当它被其他线程拥有时，状态为lock状态，否则为unlock状态。pthread_mutex_init将一个互斥量初始化，并设置为unlock状态。
 
 #### pthread_mutex_t
-
-##### DESCRIPTION
 
 > A mutex is a MUTual EXclusion device, and is useful for protecting shared data  structures from concurrent modifications, and implementing critical sections and monitors. A mutex has two possible states: unlocked (not owned by any thread), and locked (owned by one thread). A mutex can never be owned by two different threads simultaneously. A thread attempting to lock a mutex that is already locked by another thread is suspended until the owning thread unlocks the mutex first. 
 
 #### pthread_mutex_init
-
-```C
-man pthread_mutex_init
-```
-
-##### SYNOPSIS
 
 ```C
 #include <pthread.h>
@@ -445,17 +421,9 @@ int pthread_mutex_init(
 );
 ```
 
-##### DESCRIPTION
-
 > pthread_mutex_init initializes the mutex object pointed to by mutex according to the mutex attributes specified in mutexattr. If mutexattr is NULL, default attributes are used instead.
 
 #### pthread_mutex_lock
-
-```C
-man pthread_mutex_lock
-```
-
-##### SYNOPSIS
 
 ```c
 #include <pthread.h>
@@ -465,17 +433,9 @@ int pthread_mutex_lock(
 );
 ```
 
-##### DESCRIPTION
-
 > pthread_mutex_lock locks the given mutex. If the mutex is currently unlocked, it becomes locked and owned by the calling thread, and pthread_mutex_lock returns immediately. If the mutex is already locked by another thread, pthread_mutex_lock suspends the calling thread until the mutex is unlocked.
 
 #### pthread_mutex_unlock
-
-```C
-man pthread_mutex_unlock
-```
-
-##### SYNOPSIS
 
 ```c
 #include <pthread.h>
@@ -484,8 +444,6 @@ int pthread_mutex_unlock(
     pthread_mutex_t *mutex /* in */ /* pointer to mutex(pthread_mutex_t) */
 );
 ```
-
-##### DESCRIPTION
 
 > pthread_mutex_unlock unlocks the given mutex. The mutex is assumed to be locked and owned by the calling thread on entrance to pthread_mutex_unlock. If the  mutex is of the `fast` kind, pthread_mutex_unlock  always  returns  it  to  the unlocked state. If it is of the `recursive` kind, it decrements the locking count of the mutex (number of pthread_mutex_lock operations performed on it by the calling thread), and only when this count reaches zero is the mutex actually unlocked.
 
@@ -596,7 +554,7 @@ Thread [main] pi: 3.1415926534
 
 #### 信号量
 
-信号量是一种特殊的无符号整数，实现了原子性的+1`sem_post`和原子性的-1`sem_wait`。
+信号量是一种特殊的无符号整数，实现了原子性的加一（`sem_post`）和原子性的减一（`sem_wait`）。
 
 #### 生产者-消费者模型
 
@@ -621,8 +579,6 @@ Thread [main] pi: 3.1415926534
 
 #### sem_init
 
-##### SYNOPSIS
-
 ```C
 #include <semaphore.h>
 
@@ -635,13 +591,9 @@ int sem_init(
 Link with -pthread.
 ```
 
-##### DESCRIPTION
-
 > sem_init()  initializes  the  unnamed  semaphore at the address pointed to by sem. The value argument specifies the initial value for the semaphore.
 
 #### sem_destroy
-
-##### SYNOPSIS
 
 ```C
 #include <semaphore.h>
@@ -653,13 +605,9 @@ int sem_destroy(
 Link with -pthread.
 ```
 
-##### DESCRIPTION
-
 > sem_destroy() destroys the unnamed semaphore at the address pointed to by sem.
 
 #### sem_post
-
-##### SYNOPSIS
 
 ```C
 #include <semaphore.h>
@@ -671,13 +619,9 @@ int sem_post(
 Link with -pthread.
 ```
 
-##### DESCRIPTION
-
 > sem_post() increments (unlocks) the semaphore pointed to by sem. If the semaphore's value consequently becomes greater than zero, then another process or thread blocked in a sem_wait(3) call will be woken up and proceed to lock the semaphore.
 
 #### sem_wait
-
-##### SYNOPSIS
 
 ```C
 #include <semaphore.h>
@@ -689,36 +633,12 @@ int sem_wait(
 Link with -pthread.
 ```
 
-##### DESCRIPTION
-
 > sem_wait() decrements (locks) the semaphore pointed to by sem. If the semaphore's value is greater than zero, then the decrement proceeds, and the function returns, immediately. If the semaphore currently has the value zero, then the call blocks until either it becomes possible to perform the decrement (i.e., the semaphore value rises above zero), or a signal handler interrupts the call.
 
 #### 伪代码
 
 ```C
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <pthread.h>
-#include <semaphore.h>
-
-struct Message{
-    long dst_thread;
-    char msg[256];
-};
-
-struct Queue{
-    unsigned long fron, rear;
-    unsigned long msize;
-    struct Message buffer[256];
-};
-
-int init_que(struct Queue* _que);/* 0 success */
-int full_que(struct Queue* _que);/* 1 full, else 0 */
-int empty_que(struct Queue* _que);/* 1 empty, else 0 */
-int push_que(struct Queue* _que, struct Message msg);/* 0 success */
-int pop_que(struct Queue* _que, struct Message* msg);/* 0 success */
-int peek_que(struct Queue* _que, struct Message* msg);/* 0 success */
+...; /* head, data struct and func define */
 
 void* Pth_msg(void* rank);
 
@@ -727,25 +647,12 @@ int thread_count;
 sem_t mutex, msg_num;
 
 int main(int argc, char* argv[]){
-    long thread;
-    pthread_t* thread_handles;
-
+    ...;
     init_que(&que);
     thread_count = 8;
     sem_init(&mutex, 0, 1);
     sem_init(&msg_num, 0, 0);
-
-    thread_handles = malloc(thread_count*sizeof(pthread_t));
-
-    for (thread = 0; thread < thread_count; thread++)
-        pthread_create(&thread_handles[thread], NULL, Pth_msg, (void*)thread);
-
-    for (thread = 0; thread < thread_count; thread++)
-        pthread_join(thread_handles[thread], NULL);
-
-    free(thread_handles);
-
-    return 0;
+    ...;
 }
 
 void* Pth_msg(void* rank){
@@ -813,4 +720,168 @@ Thread [5]: sended message to thread [3]
 Thread [3]: received a message: Hello! thread [3] , i'm thread [5]
 ```
 
-### 
+### Pth_barrier.c
+
+#### 路障
+
+顾名思义，阻塞当前线程，直到条件满足。
+
+#### 忙等待和互斥量实现路障
+
+维护一个全局计数器，统计进入忙等待的线程个数，互斥量保证全局计数器的互斥访问，每个线程进入忙等待前让计数器加一。当所有线程都进入忙等待后，退出忙等待。
+
+```C
+/* Shared and initialized by the main thread */
+int counter;
+int thread_count;
+pthread_mutex_t barrier_mutex;
+...;
+void* Thread_work(...){
+    ...;
+    /* Barrier */
+    pthread_mutex_lock(&barrier_mutex);
+    counter++;
+    pthread_mutex_unlock(&barrier_mutex);
+    while(counter < thread_cout>);
+    ...;
+}
+```
+
+>  这种实现无法复用！
+
+#### 信号量实现路障
+
+如果不是最后一个线程就直接进入路障，如果是最后一个线程，将count清零，并为其他所有线程post路障信号量。
+
+```C
+/* Shared and initialized by the main thread */
+int count; /* init 1 */
+int thread_count;
+sem_t count_sem; /* init 1 */
+sem_t barrier_sem; /* init 0 */
+...;
+void* Thread_work(...){
+    ...;
+    /* Barrier */
+    sem_wait(&count_sem);
+    if (count == thread_count - 1){
+        count = 0;
+        sem_post(&count_sem);
+        for (j = 0; j < thread_count-1; j++)
+            sem_post(&barrier_sem);
+    }
+    else{
+        count++;
+        sem_post(&count_sem);
+        sem_wait(&barrier_sem);
+    }
+    ...;
+}
+```
+
+>  这种实现无法复用！
+
+#### 条件变量实现路障
+
+条件变量提供了一组能够方便的实现阻塞和唤醒的接口
+
+#### pthread_cond_t
+
+> A  condition (short for `condition variable`) is a synchronization device that allows threads to suspend execution and relinquish the processors until some predicate on shared data is satisfied. The basic operations on conditions are: signal the condition (when the predicate becomes true), and wait for the condition, suspending the thread execution until another thread signals the condition.
+> A condition variable must always be associated with a mutex, to avoid the race condition where a thread prepares to wait on a condition variable and another thread signals the condition just before the first thread actually waits on it.
+
+#### pthread_cond_init
+
+```C
+#include <pthread.h>
+
+int pthread_cond_init(
+    pthread_cond_t *cond, /* in */ /* condition variable */
+    pthread_condattr_t *cond_attr /* in */ /* if NULL, default */
+);
+```
+
+> pthread_cond_init initializes the condition variable cond, using the condition attributes specified in cond_attr, or default attributes if cond_attr is NULL. The LinuxThreads implementation supports no attributes for conditions, hence the cond_attr parameter is actually ignored.
+
+#### pthread_cond_destroy
+
+```C
+#include <pthread.h>
+
+int pthread_cond_destroy(
+    pthread_cond_t *cond /* in */ /* condition variable */
+);
+```
+
+> pthread_cond_destroy destroys a condition variable, freeing the resources it might hold. No threads must be waiting on the condition variable on entrance to pthread_cond_destroy. In the LinuxThreads implementation, no resources are associated with condition variables, thus pthread_cond_destroy actually does nothing except checking that the condition has no waiting threads.
+
+#### pthread_cond_wait
+
+```C
+#include <pthread.h>
+
+int pthread_cond_wait(
+    pthread_cond_t *cond, /* in */ /* condition variable */
+    pthread_mutex_t *mutex /* in */ /* mutex to be unlock */
+);
+```
+
+> pthread_cond_wait atomically unlocks the mutex (as per pthread_unlock_mutex) and waits for the condition variable cond to be signaled. The thread execution is suspended and does not consume any CPU time until the condition variable is signaled. The mutex must be locked by the calling thread on entrance to pthread_cond_wait. Before returning to the calling thread, pthread_cond_wait re-acquires mutex (as per  pthread_lock_mutex).
+
+#### pthread_cond_broadcast
+
+```C
+#include <pthread.h>
+
+int pthread_cond_broadcast(
+    pthread_cond_t *cond /* in */ /* condition variable */
+);
+```
+
+> pthread_cond_broadcast restarts all the threads that are waiting on the condition variable cond. Nothing happens if no threads are waiting on cond.
+
+#### pthread_cond_signal
+
+```C
+#include <pthread.h>
+
+int pthread_cond_signal(
+    pthread_cond_t *cond /* in */ /* condition variable */
+);
+```
+
+> pthread_cond_signal restarts one of the threads that are waiting on the condition variable cond. If no threads are waiting on cond, nothing happens. If several threads are waiting on cond, exactly one  is  restarted, but it is not specified which.
+
+#### demo
+
+```C
+/* shared */
+int counter = 0;
+pthread_mutex_t mutex;
+pthread_cond_t cond_var;
+...;
+void* Thread_work(...){
+	...;
+    /* barrier */
+    pthread_mutex_lock(&mutex);
+    counter++;
+    if (counter == thread_counter){
+        counter = 0;
+        pthread_cond_broadcast(&cond_var);
+    }
+    else while(pthread_cond_wait(&cond_var, &mutex) != 0);
+    ...;
+}
+```
+
+#### 伪代码
+
+```C
+
+```
+
+#### 输出
+
+```C
+
+```
