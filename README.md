@@ -907,6 +907,13 @@ void* Thread_work(void* rank){
 }
 ```
 
+> pthread_cond_wait 相当于以下操作
+> ```C
+> pthread_mutex_unlock(&mutex);
+> wait_on_signal(&cond);
+> pthread_mutex_lock(&mutex);
+> ```
+
 #### 输出
 
 ```C
