@@ -5,6 +5,14 @@
 #define OP_NUM 10000
 
 int main(int argc, char* argv[]){
+    if (argc <= 1){
+        printf("Usage: ./a.out Member_rate(%%)\n");
+        return 0;
+    }
+    
+    long Member_rate = strtol(argv[1], NULL, 10)*10;
+
+
     int i, thread, thread_count;
     char filename[32];
     FILE * out;
@@ -19,13 +27,13 @@ int main(int argc, char* argv[]){
     for (thread = 0; thread < thread_count; thread++){
         sprintf(filename, "input%d.txt", thread);
         out = fopen(filename, "w");
-        
+
         fprintf(out, "%d\n", OP_NUM);
-        for (i =0; i < OP_NUM; i++){
+        for (i = 0; i < OP_NUM; i++){
             int tmp = rand()%1000;
-            if (tmp < 800)
+            if (tmp < Member_rate)
                 fprintf(out, "M %d\n", rand()%2000);
-            else if (tmp < 900)
+            else if (tmp < 500 + Member_rate/2)
                 fprintf(out, "I %d\n", rand()%2000);
             else
                 fprintf(out, "D %d\n", rand()%2000);

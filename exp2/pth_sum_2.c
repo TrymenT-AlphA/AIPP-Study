@@ -6,7 +6,7 @@ int thread_count;
 double sum;
 pthread_mutex_t lock;
 
-#define n 0xFFFFFFFF
+#define n 1E8
 
 void* Pth_sum(void* rank);
 

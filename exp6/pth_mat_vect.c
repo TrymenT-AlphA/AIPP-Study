@@ -3,8 +3,8 @@
 #include <pthread.h>
 #include <time.h>
 
-#define m 10000
-#define n 10000
+#define m 8
+#define n 800000
 
 /* Global variables */
 int thread_count;

@@ -5,7 +5,7 @@
 int thread_count, flag;
 double sum;
 
-#define n 0xFFFFFFFF
+#define n 1E8
 
 void* Pth_sum(void* rank);
 

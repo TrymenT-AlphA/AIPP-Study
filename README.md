@@ -35,7 +35,7 @@ SRC = $(wildcard *.c)
 BIN = $(SRC:%.c=%)
 
 CC = gcc
-CFLAGS = -Wall -g -lpthread
+CFLAGS = -Wall-Og -g -lpthread
 
 all: $(BIN)
 
@@ -76,8 +76,6 @@ int pthread_create(
     void *(*start_routine) (void *),/* in */ /* thread routine */
     void *arg                       /* in */ /* start_routine sole arg, using addr, using struct */
 );
-
-Compile and link with -pthread.
 ```
 
 > The pthread_create() function starts a new thread in the calling process. The new thread starts execution by invoking start_routine(); arg is passed as the sole argument of start_routine().
@@ -91,8 +89,6 @@ int pthread_join(
     pthread_t thread,/* in */ /* thread ID */
     void **retval    /* out */ /* return value from start_routine, if NULL, ignore */
 );
-
-Compile and link with -pthread.
 ```
 
 > The  pthread_join()  function  waits  for  the  thread  specified by thread to terminate.  If that thread has already terminated, then pthread_join() returns immediately.  The thread specified by thread must be joinable.
@@ -257,43 +253,29 @@ void* Pth_mat_vect(void* rank){
 #### 输出
 
 ```C
-$ time ./pth_mat_vect 1
-Thread[0]: calc from row:0 to row:9999
+$ time ./pth_mat_vect 1 
+Thread [0]: calc from row:0 to row:10000
 Thread [main] Using [1] threads, total time: [0] s
-./pth_mat_vect 1  0.26s user 0.00s system 96% cpu 0.272 total
+./pth_mat_vect 1  0.27s user 0.00s system 97% cpu 0.276 total
 $ time ./pth_mat_vect 2
 Thread [0]: calc from row:0 to row:5000
 Thread [1]: calc from row:5000 to row:10000
-Thread [main] Using [2] threads, total time: [1] s
-./pth_mat_vect 2  0.25s user 0.01s system 194% cpu 0.134 total
+Thread [main] Using [2] threads, total time: [0] s
+./pth_mat_vect 2  0.29s user 0.00s system 188% cpu 0.153 total
 $ time ./pth_mat_vect 3
-Thread [0]: calc from row:0 to row:3333
-Thread [1]: calc from row:3333 to row:6666
-Thread [2]: calc from row:6666 to row:9999
+Thread [0]: calc from row:0 to row:3334
+Thread [1]: calc from row:3334 to row:6668
+Thread [2]: calc from row:6668 to row:10000
 Thread [main] Using [3] threads, total time: [0] s
-./pth_mat_vect 3  0.34s user 0.00s system 254% cpu 0.134 total
+./pth_mat_vect 3  0.32s user 0.00s system 266% cpu 0.120 total
 $ time ./pth_mat_vect 4
-Thread[0]: calc from row:0 to row:2499
-Thread[1]: calc from row:2500 to row:4999
-Thread[3]: calc from row:7500 to row:9999
-Thread[2]: calc from row:5000 to row:7499
+Thread [0]: calc from row:0 to row:2500
+Thread [2]: calc from row:5000 to row:7500
+Thread [3]: calc from row:7500 to row:10000
+Thread [1]: calc from row:2500 to row:5000
 Thread [main] Using [4] threads, total time: [0] s
-./pth_mat_vect 4  0.27s user 0.00s system 386% cpu 0.070 total
+./pth_mat_vect 4  0.29s user 0.00s system 352% cpu 0.083 total
 ```
-
-> 2核至3核的性能几乎没有提升，并且3核占用了更多的cpu资源，应该是伪共享产生了大量不必要的访存操作。我的cpu每个核两个线程，当使用到第三个线程时就必须考虑两个核之间的Cache一致性问题。
->
-> #-----------------------------------------------------------------------------------------------------------------#
->
-> ```C
-> $ cat /sys/devices/system/cpu/cpu0/cache/index*/type
-> Data
-> Instruction
-> Unified /* 统一的 */
-> Unified /* 统一的 */
-> ```
-> 
-> 事后查了一下，我有8个cpu（cpu0~cpu7），每个cpu有自己独立的data cache和独立的instruction cache，cpu之间的二级cache和三级cache是共享的。奇怪的是一个cpu能分出两个线程（或者说两个逻辑cpu），这两个线程之间是共享data cache和instruction cache的，因此单线程到双线程的提升也很明显，但是双核到三核几乎没有提升，这也验证了之前的想法。
 
 ### Pth_sum.c
 
@@ -1025,19 +1007,69 @@ Delete(value);
 pthread_rwlock_unlock(&rwlock);
 ```
 
-#### 性能测试
-
-1000 初始键值，100 000 个操作，80%Member，10%Insert，10%Delete（in.txt）
-
 #### 伪代码
 
+##### 互斥量
 ```C
+...;
+switch(op){
+    case 'M':
+    pthread_mutex_lock(&mutex);
+    Member(&head, val);
+    pthread_mutex_unlock(&mutex);
+    break;
+    case 'I':
+    pthread_mutex_lock(&mutex);
+    Insert(&head, val);
+    pthread_mutex_unlock(&mutex);
+    break;
+    case 'D':
+    pthread_mutex_lock(&mutex);
+    Delete(&head, val);
+    pthread_mutex_unlock(&mutex);
+    break;
+    ...;
+}
+```
+
+##### 读写锁
+
+```C
+switch(op){
+    case 'M':
+    pthread_rwlock_rdlock(&rwlock);
+    Member(&head, val);
+    pthread_rwlock_unlock(&rwlock);
+    break;
+    case 'I':
+    pthread_rwlock_wrlock(&rwlock);
+    Insert(&head, val);
+    pthread_rwlock_unlock(&rwlock);
+    break;
+    case 'D':
+    pthread_rwlock_wrlock(&rwlock);
+    Delete(&head, val);
+    pthread_rwlock_unlock(&rwlock);
+    break;
+}
 ```
 
 #### 输出
 
 ```C
+$ ./generate_input 99
+$ time ./pth_rwlock_0
+./pth_rwlock_0  0.29s user 0.94s system 598% cpu 0.204 total
+$ time ./pth_rwlock_2
+./pth_rwlock_2  0.05s user 0.14s system 296% cpu 0.063 total
+$ ./generate_input 95
+$ time ./pth_rwlock_0
+./pth_rwlock_0  0.21s user 1.18s system 577% cpu 0.242 total
+$ time ./pth_rwlock_2
+./pth_rwlock_2  0.20s user 0.26s system 242% cpu 0.190 total
 ```
+
+> 读写锁本身比互斥量更耗时，只有在大量读操作的情形下占优势。
 
 ### Cache，Cache一致性和伪共享
 
@@ -1051,14 +1083,24 @@ pthread_rwlock_unlock(&rwlock);
 
 使用局部变量，减少操作共享变量的次数，达到减少访存次数的目的。
 
-#### 伪代码
-
-```C
-```
-
 #### 输出
 
 ```C
+$ time ./pth_mat_vect 1
+Thread [0]: calc from row:0 to row:8
+Thread [main] Using [1] threads, total time: [0] s
+./pth_mat_vect 1  0.01s user 0.00s system 47% cpu 0.019 total
+$ time ./pth_mat_vect 8
+Thread [0]: calc from row:0 to row:1
+Thread [2]: calc from row:2 to row:3
+Thread [1]: calc from row:1 to row:2
+Thread [3]: calc from row:3 to row:4
+Thread [4]: calc from row:4 to row:5
+Thread [5]: calc from row:5 to row:6
+Thread [6]: calc from row:6 to row:7
+Thread [7]: calc from row:7 to row:8
+Thread [main] Using [8] threads, total time: [0] s
+./pth_mat_vect 8  0.09s user 0.00s system 504% cpu 0.018 total
 ```
 
 ### 线程安全性
