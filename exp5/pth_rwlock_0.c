@@ -20,9 +20,9 @@ int main(int argc, char* argv[]){
     pthread_mutex_init(&mutex, NULL);
     int init_num, val; /* init list */
     FILE * in = fopen("input.txt", "r");
-    if (fscanf(in, "%d", &init_num) < 0) exit(0);
+    if (fscanf(in, "%d", &init_num) < 0) exit(-1);
     while(init_num--){
-        if (fscanf(in, "%d", &val) < 0) exit(0);
+        if (fscanf(in, "%d", &val) < 0) exit(-1);
         Insert(&head, val);
     }
 
@@ -55,9 +55,9 @@ void* Thread_work(void* rank){
     FILE * in = fopen(filename, "r");
 
     if (fscanf(in, "%d", &op_num) < 0)
-        exit(0);
+        exit(-1);
     while(op_num--){
-        if (fscanf(in, " %c %d\n", &op, &val) < 0) exit(0);
+        if (fscanf(in, " %c %d\n", &op, &val) < 0) exit(-1);
         switch(op){
             case 'M':
             pthread_mutex_lock(&mutex);
