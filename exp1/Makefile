@@ -7,7 +7,7 @@ SRC = $(wildcard *.c)
 BIN = $(SRC:%.c=%)
 
 CC = gcc
-CFLAGS = -Wall -g -lpthread
+CFLAGS = -Wall -Og -g -lpthread
 
 all: $(BIN)
 
