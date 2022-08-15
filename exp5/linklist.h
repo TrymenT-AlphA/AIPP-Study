@@ -1,3 +1,7 @@
+/*
+    linklist.h
+    Author: ChongKai
+*/
 #ifndef __LINKLIST_H__
 #define __LINKLIST_H__
 #include <stdio.h>
@@ -8,9 +12,10 @@ struct linklist_node{
     struct linklist_node* next;
 };
 
-int Member(struct linklist_node** _head, int _val); /* if _val in list, return 1, else 0 */
-int Insert(struct linklist_node** _head, int _val); /* insert a new _val, if success, return 1, else 0 */
-int Delete(struct linklist_node** _head, int _val); /* delete a _val in list, if success, return 1, else 0 */
+int Member(struct linklist_node** _head, int _val); /* 1 for in, else 0 */
+int Insert(struct linklist_node** _head, int _val); /* 0 for success, else -1 */
+int Delete(struct linklist_node** _head, int _val); /* 0 for success, else -1 */
+int Free(struct linklist_node** _head); /* 0 for success */
 void Layout(struct linklist_node** _head); /* print the whole list */
 
 void Layout(struct linklist_node** _head){
@@ -53,10 +58,10 @@ int Insert(struct linklist_node** _head, int _val){
         else
             _pre->next = _tmp;
 
-        return 1;
+        return 0;
     }
     else
-        return 0;
+        return -1;
 } /* Insert */
 
 int Delete(struct linklist_node** _head, int _val){
@@ -77,10 +82,23 @@ int Delete(struct linklist_node** _head, int _val){
             _pre->next = _cur->next;
             free(_cur);
         }
-        return 1;
+        return 0;
     }
     else
-        return 0;
+        return -1;
 } /* Delete */
+
+int Free(struct linklist_node** _head){
+    struct linklist_node* _cur = *_head;
+    struct linklist_node* _pre = NULL;
+
+    while(_cur != NULL){
+        _pre = _cur;
+        _cur = _cur->next;
+        free(_pre);
+    }
+
+    return 0;
+} /* Free */
 
 #endif /* __LINKLIST_H__ */

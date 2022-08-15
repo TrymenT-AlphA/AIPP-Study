@@ -1,4 +1,5 @@
 # 自动编译当前目录下所有C文件为对应的二进制文件
+# Author: CongKai
 # Usage: make [options]
 # options:
 # 	D=DEFINE	#define DEFINE in C

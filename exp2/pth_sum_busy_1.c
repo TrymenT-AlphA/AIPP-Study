@@ -1,6 +1,6 @@
-/* 
-    pth_mat_vect.c
-    Author: CongKai
+/*
+    pth_sum_busy_1.c
+    Author: ChongKai
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,12 +8,10 @@
 #include "timer.h"
 
 /* Global variables */
-#define M 10000
-#define N 10000
+#define N 1E8
 int thread_count;
-double A[M][N];
-double y[M];
-double x[N];
+int flag;
+double sum;
 
 /* Thread function */
 void* Thread_work(void* rank);
@@ -26,7 +24,7 @@ int main(int argc, char* argv[]){
     }
     /* Get number of thread_count */
     thread_count = strtol(argv[1], NULL, 10);
-    
+
     /* Initialize */
 
     double st_time, ed_time;
@@ -48,30 +46,40 @@ int main(int argc, char* argv[]){
 
     /* Log */
     printf(
-        "Thread [main]: Using [\033[31m%d\033[0m] threads, total time: [\033[31m%lf\033[0m] s\n", thread_count, ed_time-st_time
+        "Thread [main]: Using [\033[31m%d\033[0m] threads, total time: [\033[31m%lf\033[0m] s\n",
+        thread_count, ed_time-st_time
     );
+    printf("Thread [main]: Pi: %.10lf\n", 4.0*sum);
 
     return 0;
-} /* main */
+}
 
 void* Thread_work(void* rank){
     long my_rank = (long)rank;
-    int i, j;
-    int local_m = (M+thread_count-1)/thread_count;
-    int my_first_row = my_rank*local_m;
-    int my_last_row = my_first_row+local_m;
-    if (my_last_row > M)
-        my_last_row = M;
+    double factor, my_sum = 0.0;
+    long long i;
+    long long my_n = N/thread_count;
+    long long my_first_i = my_n*my_rank;
+    long long my_last_i = my_first_i+my_n;
 
     #ifdef DEBUG
-    printf("Thread [%ld]: my_first_row: %d, my_last_row: %d\n", my_rank, my_first_row, my_last_row);
+    printf("Thread [%ld]: my_first_i: %lld, my_last_i: %lld\n", my_rank, my_first_i, my_last_i);
     #endif
 
-    for (i = my_first_row; i < my_last_row; i++){
-        y[i] = 0.0;
-        for (j = 0; j < N; j++)
-            y[i] += A[i][j]*x[j];
-    }
+    if (my_first_i % 2 == 0)
+        factor = 1.0;
+    else
+        factor = -1.0;
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor)
+        my_sum += factor/(2*i+1);
+
+    #ifdef DEBUG
+    printf("Thread [%ld]: my_sum: %.10lf\n", my_rank, my_sum);
+    #endif
+
+    while (flag != my_rank); /* Spin */
+    sum += my_sum;
+    flag = (flag+1) % thread_count;
 
     return NULL;
 } /* Thread_work */

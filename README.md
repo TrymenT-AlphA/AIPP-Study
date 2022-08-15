@@ -27,29 +27,30 @@ Makefile
 
 ```makefile
 # 自动编译当前目录下所有C文件为对应的二进制文件
+# Author: CongKai
 # Usage: make [options]
 # options:
-#   D=DEFINE    #define DEFINE in C
+# 	D=DEFINE	#define DEFINE in C
 
 SRC = $(wildcard *.c)
 BIN = $(SRC:%.c=%)
 
 CC = gcc
-CFLAGS = -Wall-Og -g -lpthread
+CFLAGS = -Wall -O0 -g -lpthread
 
 all: $(BIN)
 
 ifndef D
 $(BIN): %:%.c
-    $(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@
 else
 $(BIN): %:%.c
-    $(CC) -D$(D) $(CFLAGS) $^ -o $@
+	$(CC) -D$(D) $(CFLAGS) $^ -o $@
 endif
 
 .PHONY: clean
 clean:
-    -rm $(BIN)
+	-rm $(BIN)
 
 ```
 
@@ -91,7 +92,7 @@ int pthread_join(
 );
 ```
 
-> The  pthread_join()  function  waits  for  the  thread  specified by thread to terminate.  If that thread has already terminated, then pthread_join() returns immediately.  The thread specified by thread must be joinable.
+> The pthread_join() function waits for the thread specified by thread to terminate.  If that thread has already terminated, then pthread_join() returns immediately.  The thread specified by thread must be joinable.
 
 #### 同时等待多个线程
 
@@ -100,7 +101,7 @@ for (thread = 0; thread < thread_count; thread++)
     pthread_join(thread_handles[thread], NULL);
 ```
 
-当程序运行到pthread_join(thread_handle[0], NULL)时就被阻塞，线程0运行结束后，继续被线程1阻塞，以此类推。注意到`If that thread has already terminated, then pthread_join() returns immediately`线程在被创建后就可以开始运行，实际的结果就是阻塞至所有线程中最晚结束的线程返回。
+当主线程运行到pthread_join(thread_handle[0], NULL)时就被阻塞，待线程0运行结束后，继续被线程1阻塞，以此类推。因为线程在被创建后就可以开始运行，实际的结果就是阻塞至所有线程中最晚结束的线程返回。
 
 #### start_routine函数
 
@@ -108,9 +109,7 @@ for (thread = 0; thread < thread_count; thread++)
 void* thread_function(void*);
 ```
 
-thread_function形式固定，只接受一个参数，且必须为void\*指针，返回值也必须是void\*指针，都代表一个地址。参数和返回值在使用前按需要的类型进行强制类型转换。若希望使用多个参数，可以将多个参数定义为一个结构体，返回值同理。
-
-实际上start_routine = &thread_function，start_routine为一个函数指针，指向thread_function的起始地址。
+thread_function形式固定，只接受一个参数，且必须为void\*指针，返回值也必须是void\*指针，都代表一个地址。参数和返回值在使用前按需要的类型进行强制类型转换。若希望使用多个参数，可以将多个参数定义为一个结构体，返回值同理。start_routine = &thread_function，start_routine为一个函数指针，指向thread_function的起始地址。
 
 #### 线程执行的顺序
 
@@ -131,33 +130,41 @@ make D=DEBUG && ./pth_hello 2
 #### 伪代码
 
 ```C
+/* 
+    pth_hello.c
+    Author: CongKai
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 
-/* Global variables: accessible to all threads */
+/* Shared variables */
 int thread_count;
 
-void* Pth_hello(void* rank); /* Thread function */
+/* Thread function */
+void* Thread_work(void* rank); 
 
+/* Main routine */
 int main(int argc, char* argv[]){
-    if (argc <= 1){ /* error input */
-        printf("Usage: ./a.out thread_count\n");
+    if (argc <= 1){ /* Error input */
+        printf("Usage: %s <thread_count>\n", argv[0]);
         return 0;
     }
+    /* Get number of thread_count */
+    thread_count = strtol(argv[1], NULL, 10);
 
+    /* Initialize */
+
+    /* Create threads */
     long thread;
     pthread_t* thread_handles;
-
-    /* Get number of all threads from command line */
-    thread_count = strtol(argv[1], NULL, 10);
 
     thread_handles = malloc(thread_count*sizeof(pthread_t));
 
     for (thread = 0; thread < thread_count; thread++)
-        pthread_create(&thread_handles[thread], NULL, Pth_hello, (void*)thread);
+        pthread_create(&thread_handles[thread], NULL, Thread_work, (void*)thread);
 
-    printf("Hello from the main thread\n");
+    printf("Thread [main]: Hello!\n");
 
     for (thread = 0; thread < thread_count; thread++)
         pthread_join(thread_handles[thread], NULL);
@@ -167,13 +174,13 @@ int main(int argc, char* argv[]){
     return 0;
 } /* main */
 
-void* Pth_hello(void* rank){
+void* Thread_work(void* rank){
     long my_rank = (long)rank;
 
-    printf("Hello from thread %ld of %d\n", my_rank, thread_count);
+    printf("Thread [%ld]: Hello!\n", my_rank);
 
-    #ifdef DEBUG /* ? is printf thread safe ? probably yes */
-    int my_count = 100;
+    #ifdef DEBUG
+    int my_count = 10000;
     while(my_count--)
         if (my_rank == 0)
             printf("Thread [%ld] %s\n", my_rank, "0000000000000000000000000000000000000000");
@@ -182,18 +189,25 @@ void* Pth_hello(void* rank){
     #endif
 
     return NULL;
-} /* Hello */
+} /* Thread_work */
+
 ```
+
+> 这是一个最基本的多线程程序，可以作为框架使用
 
 #### 输出
 
 ```c
-$ ./pth_hello 4   
-Hello from thread 0 of 4
-Hello from the main thread
-Hello from thread 1 of 4
-Hello from thread 3 of 4
-Hello from thread 2 of 4
+$ ./pth_hello 8      
+Thread [0]: Hello!
+Thread [1]: Hello!
+Thread [2]: Hello!
+Thread [3]: Hello!
+Thread [4]: Hello!
+Thread [5]: Hello!
+Thread [6]: Hello!
+Thread [7]: Hello!
+Thread [main]: Hello!
 ```
 
 ### Pth_mat_vect.c
@@ -220,61 +234,54 @@ for (i = 0; i < m; i++){
 #### 伪代码
 
 ```C
-#define m 10000
-#define n 10000
-
 /* Global variables */
+#define M 10000
+#define N 10000
 int thread_count;
-double A[m][n];
-double y[m];
-double x[n];
+double A[M][N];
+double y[M];
+double x[N];
 
-...; /* main */
-
-void* Pth_mat_vect(void* rank){
+void* Thread_work(void* rank){
     long my_rank = (long)rank;
     int i, j;
-    int local_m = m/thread_count;
-    int my_first_row = my_rank*local_m; /* easily divide task */
-    int my_last_row = (my_rank+1)*local_m-1;
+    int local_m = (M+thread_count-1)/thread_count;
+    int my_first_row = my_rank*local_m;
+    int my_last_row = my_first_row+local_m;
+    if (my_last_row > M)
+        my_last_row = M;
 
-    ...; /* log */
+    #ifdef DEBUG
+    printf("Thread [%ld]: my_first_row: %d, my_last_row: %d\n", my_rank, my_first_row, my_last_row);
+    #endif
 
-    for (i = my_first_row; i <= my_last_row; i++){ /* do job */
+    for (i = my_first_row; i < my_last_row; i++){
         y[i] = 0.0;
-        for (j = 0; j < n; j++)
+        for (j = 0; j < N; j++)
             y[i] += A[i][j]*x[j];
     }
 
     return NULL;
-} /* Pth_mat_vect */
+} /* Thread_work */
+
 ```
 
 #### 输出
 
 ```C
-$ time ./pth_mat_vect 1 
-Thread [0]: calc from row:0 to row:10000
-Thread [main] Using [1] threads, total time: [0] s
-./pth_mat_vect 1  0.27s user 0.00s system 97% cpu 0.276 total
-$ time ./pth_mat_vect 2
-Thread [0]: calc from row:0 to row:5000
-Thread [1]: calc from row:5000 to row:10000
-Thread [main] Using [2] threads, total time: [0] s
-./pth_mat_vect 2  0.29s user 0.00s system 188% cpu 0.153 total
-$ time ./pth_mat_vect 3
-Thread [0]: calc from row:0 to row:3334
-Thread [1]: calc from row:3334 to row:6668
-Thread [2]: calc from row:6668 to row:10000
-Thread [main] Using [3] threads, total time: [0] s
-./pth_mat_vect 3  0.32s user 0.00s system 266% cpu 0.120 total
+$ time ./pth_mat_vect 1
+Thread [0]: my_first_row: 0, my_last_row: 10000
+Thread [main]: Using [1] threads, total time: [0.267072] s
+0.26user 0.00system 0:00.26elapsed 98%CPU (0avgtext+0avgdata 2052maxresident)k
+0inputs+0outputs (0major+738minor)pagefaults 0swaps
 $ time ./pth_mat_vect 4
-Thread [0]: calc from row:0 to row:2500
-Thread [2]: calc from row:5000 to row:7500
-Thread [3]: calc from row:7500 to row:10000
-Thread [1]: calc from row:2500 to row:5000
-Thread [main] Using [4] threads, total time: [0] s
-./pth_mat_vect 4  0.29s user 0.00s system 352% cpu 0.083 total
+Thread [0]: my_first_row: 0, my_last_row: 2500
+Thread [1]: my_first_row: 2500, my_last_row: 5000
+Thread [2]: my_first_row: 5000, my_last_row: 7500
+Thread [3]: my_first_row: 7500, my_last_row: 10000
+Thread [main]: Using [4] threads, total time: [0.088884] s
+0.30user 0.00system 0:00.08elapsed 339%CPU (0avgtext+0avgdata 1920maxresident)k
+0inputs+0outputs (0major+743minor)pagefaults 0swaps
 ```
 
 ### Pth_sum.c
@@ -301,104 +308,115 @@ $$
 \frac{\pi}{4}=1-\frac{1}{3}+\frac{1}{5}-\frac{1}{7}+···+(-1)^n\frac{1}{2n+1}
 $$
 
-#### Pth_sum_0.c
+#### Pth_sum_busy_0.c
 
 ##### 伪代码
 
 ```c
-void* Pth_sum(void* rank){
+void* Thread_work(void* rank){
     long my_rank = (long)rank;
     double factor;
     long long i;
-    long long my_n = n/thread_count;
+    long long my_n = N/thread_count;
     long long my_first_i = my_n*my_rank;
     long long my_last_i = my_first_i+my_n;
-    
-    ...; /* log */
+
+    #ifdef DEBUG
+    printf("Thread [%ld]: my_first_i: %lld, my_last_i: %lld\n", my_rank, my_first_i, my_last_i);
+    #endif
 
     if (my_first_i % 2 == 0)
         factor = 1.0;
     else
         factor = -1.0;
-
     for (i = my_first_i; i < my_last_i; i++, factor = -factor){
-        /* ！！频繁的spin会带来极大的性能损失！！ */
-        while (flag != my_rank); /* spin */
+        while (flag != my_rank); /* 频繁 Spin */
         sum += factor/(2*i+1);
         flag = (flag+1) % thread_count;
     }
 
     return NULL;
-} /* Pth_sum */
+} /* Thread_work */
+
+```
+
+#### Pth_sum_busy_1.c
+
+##### 伪代码
+
+```c
+void* Thread_work(void* rank){
+    long my_rank = (long)rank;
+    double factor, my_sum = 0.0;
+    long long i;
+    long long my_n = N/thread_count;
+    long long my_first_i = my_n*my_rank;
+    long long my_last_i = my_first_i+my_n;
+
+    #ifdef DEBUG
+    printf("Thread [%ld]: my_first_i: %lld, my_last_i: %lld\n", my_rank, my_first_i, my_last_i);
+    #endif
+
+    if (my_first_i % 2 == 0)
+        factor = 1.0;
+    else
+        factor = -1.0;
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor)
+        my_sum += factor/(2*i+1);
+
+    #ifdef DEBUG
+    printf("Thread [%ld]: my_sum: %.10lf\n", my_rank, my_sum);
+    #endif
+
+    while (flag != my_rank); /* 利用局部变量减少 Spin */
+    sum += my_sum;
+    flag = (flag+1) % thread_count;
+
+    return NULL;
+} /* Thread_work */
+
 ```
 
 ##### 输出
 
 ```C
-$ time ./pth_sum_0 1
-Thread [0] my_first_i: 0, my_last_i: 4294967295
-Thread [main] Using [1] threads, total time: [20] s
-Thread [main] pi: 3.1415926538
-./pth_sum_0 1  19.58s user 0.00s system 99% cpu 19.585 total
-$ time ./pth_sum_0 4
-Thread [0] my_first_i: 0, my_last_i: 1073741823
-Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
-Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
-Thread [3] my_first_i: 3221225469, my_last_i: 4294967292
-Thread [main] Using [4] threads, total time: [640] s
-Thread [main] pi: 3.1415926534
-./pth_sum_0 4  2559.37s user 0.00s system 399% cpu 10:39.85 total
+$ time ./pth_sum_busy_0 4
+Thread [0]: my_first_i: 0, my_last_i: 25000000
+Thread [1]: my_first_i: 25000000, my_last_i: 50000000
+Thread [2]: my_first_i: 50000000, my_last_i: 75000000
+Thread [3]: my_first_i: 75000000, my_last_i: 100000000
+Thread [main]: Using [4] threads, total time: [12.822754] s
+Thread [main]: Pi: 3.1415926436
+51.27user 0.00system 0:12.82elapsed 399%CPU (0avgtext+0avgdata 1764maxresident)k
+0inputs+0outputs (1major+84minor)pagefaults 0swaps
+$ time ./pth_sum_busy_1 1
+Thread [0]: my_first_i: 0, my_last_i: 100000000
+Thread [0]: my_sum: 0.7853981609
+Thread [main]: Using [1] threads, total time: [0.257886] s
+Thread [main]: Pi: 3.1415926436
+0.24user 0.00system 0:00.25elapsed 96%CPU (0avgtext+0avgdata 1976maxresident)k
+0inputs+0outputs (0major+79minor)pagefaults 0swaps
+$ time ./pth_sum_busy_1 4
+Thread [0]: my_first_i: 0, my_last_i: 25000000
+Thread [1]: my_first_i: 25000000, my_last_i: 50000000
+Thread [2]: my_first_i: 50000000, my_last_i: 75000000
+Thread [3]: my_first_i: 75000000, my_last_i: 100000000
+Thread [1]: my_sum: 0.0000000050
+Thread [2]: my_sum: 0.0000000017
+Thread [3]: my_sum: 0.0000000008
+Thread [0]: my_sum: 0.7853981534
+Thread [main]: Using [4] threads, total time: [0.066411] s
+Thread [main]: Pi: 3.1415926436
+0.24user 0.00system 0:00.06elapsed 366%CPU (0avgtext+0avgdata 1728maxresident)k
+0inputs+0outputs (0major+88minor)pagefaults 0swaps
 ```
+> 多线程程序的正确性没有问题，也得到了性能提升。
 
 > 频繁的spin会带来极大的性能损失！
 
-#### Pth_sum_1.c
-
-#####  伪代码
-
-```C
-void* Pth_sum(void* rank){
-    ...;
-
-    for (i = my_first_i; i < my_last_i; i++, factor = -factor)
-        my_sum += factor/(2*i+1);
-    
-    while (flag != my_rank); /* spin */
-    sum += my_sum;
-    flag = (flag+1) % thread_count;
-
-    return NULL;
-} /* Pth_sum */
-```
-
-#### 输出
-
-```c
-$ time ./pth_sum_1 1
-Thread [0] my_first_i: 0, my_last_i: 4294967295
-Thread [0] mysum: 0.7853981635
-Thread [main] Using [1] threads, total time: [12] s
-Thread [main] pi: 3.1415926538
-./pth_sum 1  11.15s user 0.00s system 99% cpu 11.156 total
-$ time ./pth_sum_1 4
-Thread [0] my_first_i: 0, my_last_i: 1073741823
-Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
-Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
-Thread [3] my_first_i: 3221225469, my_last_i: 4294967292
-Thread [2] mysum: 0.0000000002
-Thread [1] mysum: -0.0000000003
-Thread [3] mysum: -0.0000000001
-Thread [0] mysum: 0.7853981636
-Thread [main] Using [4] threads, total time: [3] s
-Thread [main] pi: 3.1415926534
-./pth_sum 4  11.53s user 0.00s system 398% cpu 2.893 total
-```
-
-> 多线程程序的正确性没有问题，也得到了性能提升。
-
 #### 互斥量
 
-忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现临界区的方法是使用互斥量。互斥量有且只有两种状态，lock状态和unlock状态。一个互斥量同一时刻只能被一个线程拥有，当它被其他线程拥有时，状态为lock状态，否则为unlock状态。pthread_mutex_init将一个互斥量初始化，并设置为unlock状态。
+忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现临界区的方法是使用互斥量。互斥量有且只有两种状态，lock状态和unlock状态。一个互斥量同一时刻只能被一个线程拥有，当它被其他线程拥有时，为lock状态，否则为unlock状态。pthread_mutex_init将一个互斥量初始化，并设置为unlock状态。
 
 #### pthread_mutex_t
 
@@ -441,12 +459,25 @@ int pthread_mutex_unlock(
 
 > pthread_mutex_unlock unlocks the given mutex. The mutex is assumed to be locked and owned by the calling thread on entrance to pthread_mutex_unlock. If the  mutex is of the `fast` kind, pthread_mutex_unlock  always  returns  it  to  the unlocked state. If it is of the `recursive` kind, it decrements the locking count of the mutex (number of pthread_mutex_lock operations performed on it by the calling thread), and only when this count reaches zero is the mutex actually unlocked.
 
+#### pthread_mutex_destroy
+
+```c
+#include <pthread.h>
+
+int pthread_mutex_destroy(
+    pthread_mutex_t *mutex /* in */ /* pointer to mutex(pthread_mutex_t) */
+);
+```
+
+> pthread_mutex_destroy destroys a mutex object, freeing the resources it might hold. The mutex must be unlocked  on  entrance.  In  the LinuxThreads  implementation,  no resources are associated with mutex objects, thus pthread_mutex_destroy actually does nothing except checking that the mutex is unlocked.
+
 #### demo
 
 ```C
 /* A shared global variable x can be protected by a mutex as follows: */
 int x;
 pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+/* or pthread_mutex_init(&mut, NULL); */
 
 /* 
 All accesses and modifications to x should be bracketed by calls to  
@@ -459,7 +490,7 @@ pthread_mutex_unlock(&mut);
 
 > 简而言之，临界区就像厕所，互斥量就是厕所的锁。你不想和别人一起上厕所，就要先拿到锁，然后进厕所上锁，上完厕所把锁放回原处，不然别人上不了厕所（笑。
 
-#### Pth_sum_2.c
+#### Pth_sum_mutex_0.c
 
 ##### 伪代码
 
@@ -472,77 +503,78 @@ int main(int argc, char* argv[]){
 	..;
 }
 
-void* Pth_sum(void* rank){
+void* Thread_work(void* rank){
     ...;
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor){
+        pthread_mutex_lock(&lock); /* Mutex */
+        sum += factor/(2*i+1);
+        pthread_mutex_unlock(&lock);
+    }
+    ...;
+} /* Thread_work */
 
-    pthread_mutex_lock(&lock); /* using mutex */
-    sum += my_sum;
-    pthread_mutex_unlock(&lock);
-
-    return NULL;
-} /* Pth_sum */
 ```
 
-##### 输出
-
-```C
-$ time ./pth_sum 1
-Thread [0] my_first_i: 0, my_last_i: 4294967295
-Thread [0] mysum: 0.7853981635
-Thread [main] Using [1] threads, total time: [12] s
-Thread [main] pi: 3.1415926538
-./pth_sum 1  11.04s user 0.00s system 99% cpu 11.045 total
-$ time ./pth_sum 4
-Thread [0] my_first_i: 0, my_last_i: 1073741823
-Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
-Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
-Thread [3] my_first_i: 3221225469, my_last_i: 4294967292
-Thread [1] mysum: -0.0000000003
-Thread [0] mysum: 0.7853981636
-Thread [2] mysum: 0.0000000002
-Thread [3] mysum: -0.0000000001
-Thread [main] Using [4] threads, total time: [3] s
-Thread [main] pi: 3.1415926534
-./pth_sum 4  11.54s user 0.00s system 396% cpu 2.910 total
-```
-
-> 貌似和忙等待没有多大提升，不妨将Pth_sum_0.c改成互斥量实现看看效果。
-
-#### Pth_sum_3.c
+#### Pth_sum_mutex_1.c
 
 ##### 伪代码
 
 ```C
-void* Pth_sum(void* rank){
+pthread_muext_t lock;
+
+int main(int argc, char* argv[]){
+    ...;
+    pthread_mutex_init(&lock);
+	..;
+}
+
+void* Thread_work(void* rank){
     ...;
     for (i = my_first_i; i < my_last_i; i++, factor = -factor)
-        pthread_mutex_lock(&lock); /* using mutex */
-        sum += factor/(2*i+1);
-        pthread_mutex_unlock(&lock);
+        my_sum += factor/(2*i+1);
 
-    return NULL;
-} /* Pth_sum */
+    pthread_mutex_lock(&lock); /* Mutex */
+    sum += my_sum;
+    pthread_mutex_unlock(&lock);
+    ...;
+} /* Thread_work */
 ```
 
 ##### 输出
 
 ```C
-$ time ./pth_sum_3 1
-Thread [0] my_first_i: 0, my_last_i: 4294967295
-Thread [main] Using [1] threads, total time: [45] s
-Thread [main] pi: 3.1415926538
-./pth_sum_3 1  44.82s user 0.00s system 99% cpu 44.830 total
-$ time ./pth_sum_3 4
-Thread [0] my_first_i: 0, my_last_i: 1073741823
-Thread [1] my_first_i: 1073741823, my_last_i: 2147483646
-Thread [3] my_first_i: 3221225469, my_last_i: 4294967292
-Thread [2] my_first_i: 2147483646, my_last_i: 3221225469
-Thread [main] Using [4] threads, total time: [189] s
-Thread [main] pi: 3.1415926534
-./pth_sum_3 4  278.95s user 396.18s system 356% cpu 3:09.38 total
+$ time ./pth_sum_mutex_0 4 
+Thread [0]: my_first_i: 0, my_last_i: 25000000
+Thread [2]: my_first_i: 50000000, my_last_i: 75000000
+Thread [1]: my_first_i: 25000000, my_last_i: 50000000
+Thread [3]: my_first_i: 75000000, my_last_i: 100000000
+Thread [main]: Using [4] threads, total time: [3.886149] s
+Thread [main]: Pi: 3.1415926436
+5.07user 8.70system 0:03.88elapsed 354%CPU (0avgtext+0avgdata 1812maxresident)k
+0inputs+0outputs (0major+84minor)pagefaults 0swaps
+$ time ./pth_sum_mutex_1 1
+Thread [0]: my_first_i: 0, my_last_i: 100000000
+Thread [0]: my_sum: 0.7853981609
+Thread [main]: Using [1] threads, total time: [0.256746] s
+Thread [main]: Pi: 3.1415926436
+0.24user 0.00system 0:00.25elapsed 96%CPU (0avgtext+0avgdata 1744maxresident)k
+0inputs+0outputs (0major+77minor)pagefaults 0swaps
+$ time ./pth_sum_mutex_1 4
+Thread [0]: my_first_i: 0, my_last_i: 25000000
+Thread [1]: my_first_i: 25000000, my_last_i: 50000000
+Thread [2]: my_first_i: 50000000, my_last_i: 75000000
+Thread [3]: my_first_i: 75000000, my_last_i: 100000000
+Thread [0]: my_sum: 0.7853981534
+Thread [1]: my_sum: 0.0000000050
+Thread [3]: my_sum: 0.0000000008
+Thread [2]: my_sum: 0.0000000017
+Thread [main]: Using [4] threads, total time: [0.068719] s
+Thread [main]: Pi: 3.1415926436
+0.24user 0.00system 0:00.06elapsed 352%CPU (0avgtext+0avgdata 1996maxresident)k
+0inputs+0outputs (0major+85minor)pagefaults 0swaps
 ```
 
-> 事实证明，多线程下互斥量确实快，占用cpu也较少。
+> 多线程下互斥量更快，占用cpu也较少。
 
 ### Pth_msg.c
 
@@ -559,7 +591,7 @@ Thread [main] pi: 3.1415926534
 
 #### 发送消息
 
-利用信号量实现任意一个进程与其他进程之间的通信。不妨改进书中的例子，实现一个真正的生产者-消费者模型。仓库使用队列来描述
+利用信号量实现任意一个进程与其他进程之间的通信。不妨实现一个真正的生产者-消费者模型。仓库使用队列来描述
 
 ```C
     生产者  -\  +--------------+  -\   消费者
@@ -581,8 +613,6 @@ int sem_init(
     int pshared,       /* in */ /* 0 shared between threads, else processes */
     unsigned int value /* in */ /* init value */
 );
-
-Link with -pthread.
 ```
 
 > sem_init()  initializes  the  unnamed  semaphore at the address pointed to by sem. The value argument specifies the initial value for the semaphore.
@@ -595,8 +625,6 @@ Link with -pthread.
 int sem_destroy(
     sem_t *sem /* in */ /* unnamed  semaphore */
 );
-
-Link with -pthread.
 ```
 
 > sem_destroy() destroys the unnamed semaphore at the address pointed to by sem.
@@ -609,8 +637,6 @@ Link with -pthread.
 int sem_post(
     sem_t *sem /* in */ /* initialized sem */
 );
-
-Link with -pthread.
 ```
 
 > sem_post() increments (unlocks) the semaphore pointed to by sem. If the semaphore's value consequently becomes greater than zero, then another process or thread blocked in a sem_wait(3) call will be woken up and proceed to lock the semaphore.
@@ -623,18 +649,26 @@ Link with -pthread.
 int sem_wait(
     sem_t *sem /* in */ /* initialized sem */
 );
-
-Link with -pthread.
 ```
 
 > sem_wait() decrements (locks) the semaphore pointed to by sem. If the semaphore's value is greater than zero, then the decrement proceeds, and the function returns, immediately. If the semaphore currently has the value zero, then the call blocks until either it becomes possible to perform the decrement (i.e., the semaphore value rises above zero), or a signal handler interrupts the call.
+
+#### sem_destroy
+
+```C
+#include <semaphore.h>
+
+int sem_destroy(
+    sem_t *sem /* in */ /* initialized sem */
+);
+```
+
+> sem_destroy() destroys the unnamed semaphore at the address pointed to by sem.
 
 #### 伪代码
 
 ```C
 ...; /* head, data struct and func define */
-
-void* Pth_msg(void* rank);
 
 struct Queue que;
 int thread_count;
@@ -649,28 +683,28 @@ int main(int argc, char* argv[]){
     ...;
 }
 
-void* Pth_msg(void* rank){
+void* Thread_work(void* rank){
     long my_rank = (long)rank;
     struct Message message;
     unsigned int seed = my_rank;
 
-    while(1){ /* This program keep running */
-        if (my_rank < 4){ /* thread 0,1,2,3 consumer */
+    while(1){ /* This program keeps running */
+        if (my_rank < 4){ /* Thread [0,1,2,3]: consumer */
             sem_wait(&msg_num); /* wait for a message */
-            peek_que(&que, &message);
+            peek_que(&que, &message); /* 此处错误，但在当前情况下没有问题，见读写锁 */
             if (message.dst_thread != my_rank)
                 sem_post(&msg_num);
             else{
-                printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
+                printf("Thread [%ld]: received a message: \033[31m%s\033[0m\n", my_rank, message.msg);
                 sem_wait(&mutex); /* enter critical zone */
                 pop_que(&que, NULL);
                 sem_post(&mutex); /* leave critical zone */
             }
         }
-        else{ /* thread 4,5,6,7 producer */
+        else{ /* Thread [4,5,6,7]: producer */
             if (rand_r(&seed)%10 != 9)
                 sleep(1);
-            else{ /* 1/100 send a message */ /* 1+1=9 */
+            else{ /* 1/10 send a message */
                 message.dst_thread = rand_r(&seed)%(thread_count/2);
                 sprintf(message.msg, "Hello! thread [%ld] , i'm thread [%ld]", message.dst_thread, my_rank);
                 sem_wait(&mutex); /* enter critical zone */
@@ -683,14 +717,15 @@ void* Pth_msg(void* rank){
     }
 
     return NULL;
-}
-...; /* struct Queue operation */
+} /* Thread_work */
+
 ```
 
 #### 输出
 
 ```C
-$ timeout 20 ./pth_msg 
+$ timeout 20 ./pth_msg
+Using [8] threads default
 Thread [4]: sended message to thread [0]
 Thread [0]: received a message: Hello! thread [0] , i'm thread [4]
 Thread [6]: sended message to thread [3]
@@ -704,8 +739,8 @@ Thread [1]: received a message: Hello! thread [1] , i'm thread [6]
 Thread [6]: sended message to thread [3]
 Thread [3]: received a message: Hello! thread [3] , i'm thread [6]
 Thread [4]: sended message to thread [1]
-Thread [1]: received a message: Hello! thread [1] , i'm thread [4]
 Thread [6]: sended message to thread [0]
+Thread [1]: received a message: Hello! thread [1] , i'm thread [4]
 Thread [0]: received a message: Hello! thread [0] , i'm thread [6]
 Thread [4]: sended message to thread [1]
 Thread [1]: received a message: Hello! thread [1] , i'm thread [4]
@@ -898,33 +933,34 @@ void* Thread_work(void* rank){
 }
 ```
 
-> pthread_cond_wait 相当于以下操作
-> ```C
-> pthread_mutex_unlock(&mutex);
-> wait_on_signal(&cond);
-> pthread_mutex_lock(&mutex);
-> ```
+pthread_cond_wait 相当于以下操作
+```C
+pthread_mutex_unlock(&mutex);
+wait_on_signal(&cond);
+pthread_mutex_lock(&mutex);
+```
+
 
 #### 输出
 
 ```C
-$ ./pth_barrier 8 
+$ ./pth_barrier 8
 Thread [0]: waitting
 Thread [1]: waitting
-Thread [5]: waitting
-Thread [3]: waitting
 Thread [2]: waitting
-Thread [4]: waitting
+Thread [3]: waitting
 Thread [6]: waitting
+Thread [5]: waitting
+Thread [4]: waitting
 Thread [7]: broadcast
 Thread [7]: pass
 Thread [0]: pass
 Thread [1]: pass
-Thread [5]: pass
-Thread [3]: pass
 Thread [2]: pass
-Thread [4]: pass
+Thread [3]: pass
 Thread [6]: pass
+Thread [5]: pass
+Thread [4]: pass
 ```
 
 ### Pth_linklist.c
@@ -937,27 +973,28 @@ Thread [6]: pass
     | head_p-|-->| 2 | ·-|-->| 5 | ·-|-->| 8 | NULL |
     +--------+   +---+---+   +---+---+   +---+------+
 */
-int Member(int value, struct list_node_s* head_p); /* 查找链表中值为value的节点 */
-int Insert(int value, struct list_node_s* head_p); /* 在链表的正确位置插入值为value的节点 */
-int Delete(int value, struct list_node_s* head_p); /* 删除值为value的节点 */
+int Member(int value, struct list_node_s** head_p); /* 查找链表中值为value的节点 */
+int Insert(int value, struct list_node_s** head_p); /* 在链表的正确位置插入值为value的节点 */
+int Delete(int value, struct list_node_s** head_p); /* 删除值为value的节点 */
+int Free(struct list_node_s** head_p); /* 释放整个链表 */
 ```
 
 多个线程能够同时读取一个共享内存单元，只有一个线程同时能写入一个共享内存单元
 
-> 看到这里，pth_msg.c其实写的有问题
+> pth_msg.c
 > ```C
 > sem_wait(&msg_num); /* wait for a message */
 > peek_que(&que, &message);
 > if (message.dst_thread != my_rank)
->     sem_post(&msg_num);
+>     	sem_post(&msg_num);
 > else{
->     sem_wait(&mutex); /* enter critical zone */
->     pop_que(&que, NULL);
->     sem_post(&mutex); /* leave critical zone */
->     printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
+>     	sem_wait(&mutex); /* enter critical zone */
+>     	pop_que(&que, NULL);
+>     	sem_post(&mutex); /* leave critical zone */
+>     	printf("Thread [%ld]: received a message: %s\n", my_rank, message.msg);
 > }
 > ```
-> 实际维护一个队列的时候，其中一个线程peek之后，完全有可能被系统调度暂停，然后另一个线程pop了头元素，因此无法保证程序的正确性。但是在此处，因为每个msg对应了一个线程，因此该msg只有可能被自己pop，因此在此处是可以的。实际维护一个共享数据结构时就需要`读写锁`
+> 这样是错误的，问题出在当前线程读（peek_que）的时候，该队列不能被其他线程写（pop_que），但是在此处，该队列只可能被自己写，因此没有问题。
 
 #### 方案一 粗粒度互斥量
 
@@ -983,11 +1020,11 @@ struct list_node_s {
 }
 ```
 
-> 频繁lock(unlock)导致性能严重下降，内存占用增大！
+> 频繁lock(unlock)导致性能下降，内存占用增大！
 
 #### 方案三 读写锁
 
-读写锁的思想也很简单，说到底，我们不希望 读/写 时数据被其他线程篡改。因此，当任意线程获取 读/写 锁时，阻塞尝试获取写锁的线程。同时，当一个线程获取写锁后，在它释放写锁前，链表的状态是不确定的，我们不希望这个时候的链表被其他线程 读/写，以免发生错误，因此当有线程获取写锁时，阻塞所有尝试获取 读/写 锁的线程。概括下来就是两种情况：
+读写锁的思想也很简单，当一个线程读的时候，与任意线程写是互斥的，当一个线程写的时候，和任意线程的读/写是互斥的。
 1. 当读锁lock时，阻塞写
 2. 当写锁lock时，阻塞读/写
 
@@ -1057,23 +1094,24 @@ switch(op){
 #### 输出
 
 ```C
-$ ./generate_input 99
-$ time ./pth_rwlock_0
-./pth_rwlock_0  0.29s user 0.94s system 598% cpu 0.204 total
-$ time ./pth_rwlock_2
-./pth_rwlock_2  0.05s user 0.14s system 296% cpu 0.063 total
 $ ./generate_input 95
-$ time ./pth_rwlock_0
-./pth_rwlock_0  0.21s user 1.18s system 577% cpu 0.242 total
-$ time ./pth_rwlock_2
-./pth_rwlock_2  0.20s user 0.26s system 242% cpu 0.190 total
+$ time ./pth_list_mutex
+Using [8] threads default
+Thread [main]: Using [8] threads, total time: [0.237056] s
+0.32user 1.08system 0:00.23elapsed 591%CPU (0avgtext+0avgdata 3280maxresident)k
+0inputs+0outputs (0major+121minor)pagefaults 0swaps
+$ time ./pth_list_rwlock 
+Using [8] threads default
+Thread [main]: Using [8] threads, total time: [0.182092] s
+0.15user 0.29system 0:00.18elapsed 244%CPU (0avgtext+0avgdata 3552maxresident)k
+0inputs+0outputs (0major+125minor)pagefaults 0swaps
 ```
 
-> 读写锁本身比互斥量更耗时，只有在大量读操作的情形下占优势。
+> 在95%读操作的情况下，读写锁似乎更快。
 
 ### Cache，Cache一致性和伪共享
 
-在pth_mat_vect.c中我们就发现了Cache一致性和伪共享带来的问题，在这里我们尝试解决它。
+共享变量在同一个Cache line中被多个线程共享，当任一线程修改，为了维护Cache一致性，该Cache line立即失效，造成不必要的访存操作
 
 #### 方案一 Cache对齐
 
@@ -1083,26 +1121,30 @@ $ time ./pth_rwlock_2
 
 使用局部变量，减少操作共享变量的次数，达到减少访存次数的目的。
 
+#### 如何复现伪共享
+
+查看Cache line大小为64字节，每个double为8字节，每行8个double，更改矩阵向量乘法中的矩阵维数，使待计算的double y[8]正好占一整个Cache line，分别用单线程和八线程运行，观察耗时。
+
 #### 输出
 
 ```C
-$ time ./pth_mat_vect 1
-Thread [0]: calc from row:0 to row:8
-Thread [main] Using [1] threads, total time: [0] s
-./pth_mat_vect 1  0.01s user 0.00s system 47% cpu 0.019 total
+$ time ./pth_mat_vect 1 
+Thread [0]: my_first_row: 0, my_last_row: 8
+Thread [main]: Using [1] threads, total time: [0.017103] s
+0.00user 0.00system 0:00.01elapsed 47%CPU (0avgtext+0avgdata 1892maxresident)k
+0inputs+0outputs (0major+854minor)pagefaults 0swaps
 $ time ./pth_mat_vect 8
-Thread [0]: calc from row:0 to row:1
-Thread [2]: calc from row:2 to row:3
-Thread [1]: calc from row:1 to row:2
-Thread [3]: calc from row:3 to row:4
-Thread [4]: calc from row:4 to row:5
-Thread [5]: calc from row:5 to row:6
-Thread [6]: calc from row:6 to row:7
-Thread [7]: calc from row:7 to row:8
-Thread [main] Using [8] threads, total time: [0] s
-./pth_mat_vect 8  0.09s user 0.00s system 504% cpu 0.018 total
+Thread [0]: my_first_row: 0, my_last_row: 1
+Thread [1]: my_first_row: 1, my_last_row: 2
+Thread [3]: my_first_row: 3, my_last_row: 4
+Thread [4]: my_first_row: 4, my_last_row: 5
+Thread [2]: my_first_row: 2, my_last_row: 3
+Thread [5]: my_first_row: 5, my_last_row: 6
+Thread [6]: my_first_row: 6, my_last_row: 7
+Thread [7]: my_first_row: 7, my_last_row: 8
+Thread [main]: Using [8] threads, total time: [0.016683] s
+0.06user 0.00system 0:00.01elapsed 370%CPU (0avgtext+0avgdata 3176maxresident)k
+0inputs+0outputs (0major+865minor)pagefaults 0swaps
 ```
 
-### 线程安全性
-
-我们很大一部分时间都在考虑线程安全的问题，从忙等待、互斥量、信号量、条件变量到读写锁。这也是编写并发程序和编写串行程序时最大的不同，可惜的是很大一部分C库函数并不是线程安全的，我们必须很小心的使用C库函数。并行程序和并发程序也有不同，并发程序带来的问题是中断，可以通过屏蔽中断的方法解决，但是并行程序是真正的多个cpu同时计算，因此屏蔽中断是不可取的。
+> 单线程和八线程耗时几乎一样

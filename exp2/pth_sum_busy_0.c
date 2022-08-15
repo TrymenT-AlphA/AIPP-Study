@@ -1,16 +1,17 @@
 /*
-    pth_barrier.c
+    pth_sum_busy_0.c
     Author: ChongKai
 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "timer.h"
 
 /* Global variables */
+#define N 1E8
 int thread_count;
-int counter;
-pthread_mutex_t mutex;
-pthread_cond_t cond;
+int flag;
+double sum;
 
 /* Thread function */
 void* Thread_work(void* rank);
@@ -25,8 +26,9 @@ int main(int argc, char* argv[]){
     thread_count = strtol(argv[1], NULL, 10);
 
     /* Initialize */
-    pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&cond, NULL);
+
+    double st_time, ed_time;
+    GET_TIME(st_time);
 
     /* Create threads */
     long thread;
@@ -40,29 +42,39 @@ int main(int argc, char* argv[]){
 
     free(thread_handles);
 
-    /* Destroy */
-    pthread_cond_destroy(&cond);
-    pthread_mutex_destroy(&mutex);
+    GET_TIME(ed_time);
+
+    /* Log */
+    printf(
+        "Thread [main]: Using [\033[31m%d\033[0m] threads, total time: [\033[31m%lf\033[0m] s\n",
+        thread_count, ed_time-st_time
+    );
+    printf("Thread [main]: Pi: %.10lf\n", 4.0*sum);
 
     return 0;
 }
 
 void* Thread_work(void* rank){
     long my_rank = (long)rank;
+    double factor;
+    long long i;
+    long long my_n = N/thread_count;
+    long long my_first_i = my_n*my_rank;
+    long long my_last_i = my_first_i+my_n;
 
-    pthread_mutex_lock(&mutex);
-    counter++;
-    if (counter == thread_count){
-        counter = 0;
-        printf("Thread [%ld]: broadcast\n", my_rank);
-        pthread_cond_broadcast(&cond);
+    #ifdef DEBUG
+    printf("Thread [%ld]: my_first_i: %lld, my_last_i: %lld\n", my_rank, my_first_i, my_last_i);
+    #endif
+
+    if (my_first_i % 2 == 0)
+        factor = 1.0;
+    else
+        factor = -1.0;
+    for (i = my_first_i; i < my_last_i; i++, factor = -factor){
+        while (flag != my_rank); /* Spin */
+        sum += factor/(2*i+1);
+        flag = (flag+1) % thread_count;
     }
-    else{
-        printf("Thread [%ld]: waitting\n", my_rank);
-        while(pthread_cond_wait(&cond, &mutex) != 0);
-    }
-    printf("Thread [%ld]: pass\n", my_rank);
-    pthread_mutex_unlock(&mutex);
 
     return NULL;
 } /* Thread_work */

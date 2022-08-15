@@ -1,3 +1,7 @@
+/*
+    generate_input.c
+    Author: ChongKai
+*/
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -6,12 +10,10 @@
 
 int main(int argc, char* argv[]){
     if (argc <= 1){
-        printf("Usage: ./a.out Member_rate(%%)\n");
+        printf("Usage: %s <Member_rate(%%)>\n", argv[0]);
         return 0;
     }
-    
-    long Member_rate = strtol(argv[1], NULL, 10)*10;
-
+    long Member_rate = strtol(argv[1], NULL, 10)*10;    
 
     int i, thread, thread_count;
     char filename[32];

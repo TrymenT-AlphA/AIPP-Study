@@ -1,30 +1,38 @@
+/* 
+    pth_hello.c
+    Author: CongKai
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 
-/* Global variables: accessible to all threads */
+/* Shared variables */
 int thread_count;
 
-void* Pth_hello(void* rank); /* Thread function */
+/* Thread function */
+void* Thread_work(void* rank); 
 
+/* Main routine */
 int main(int argc, char* argv[]){
-    if (argc <= 1){ /* error input */
-        printf("Usage: ./a.out thread_count\n");
+    if (argc <= 1){ /* Error input */
+        printf("Usage: %s <thread_count>\n", argv[0]);
         return 0;
     }
+    /* Get number of thread_count */
+    thread_count = strtol(argv[1], NULL, 10);
 
+    /* Initialize */
+
+    /* Create threads */
     long thread;
     pthread_t* thread_handles;
-
-    /* Get number of all threads from command line */
-    thread_count = strtol(argv[1], NULL, 10);
 
     thread_handles = malloc(thread_count*sizeof(pthread_t));
 
     for (thread = 0; thread < thread_count; thread++)
-        pthread_create(&thread_handles[thread], NULL, Pth_hello, (void*)thread);
+        pthread_create(&thread_handles[thread], NULL, Thread_work, (void*)thread);
 
-    printf("Hello from the main thread\n");
+    printf("Thread [main]: Hello!\n");
 
     for (thread = 0; thread < thread_count; thread++)
         pthread_join(thread_handles[thread], NULL);
@@ -34,13 +42,13 @@ int main(int argc, char* argv[]){
     return 0;
 } /* main */
 
-void* Pth_hello(void* rank){
+void* Thread_work(void* rank){
     long my_rank = (long)rank;
 
-    printf("Hello from thread %ld of %d\n", my_rank, thread_count);
+    printf("Thread [%ld]: Hello!\n", my_rank);
 
     #ifdef DEBUG
-    int my_count = 100;
+    int my_count = 10000;
     while(my_count--)
         if (my_rank == 0)
             printf("Thread [%ld] %s\n", my_rank, "0000000000000000000000000000000000000000");
@@ -49,4 +57,4 @@ void* Pth_hello(void* rank){
     #endif
 
     return NULL;
-} /* Hello */
+} /* Thread_work */
