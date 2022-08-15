@@ -416,7 +416,7 @@ Thread [main]: Pi: 3.1415926436
 
 > 使用03优化编译
 > 
-> >gcc -DDEBUG -g -Wall -O3 -lpthread -o pth_sum_busy_1 ./pth_sum_busy_1.c
+> > gcc -DDEBUG -g -Wall -O3 -lpthread -o pth_sum_busy_1 ./pth_sum_busy_1.c
 > 
 > 可以看到每个线程都能成功打印my_sum但主线程无法结束
 
