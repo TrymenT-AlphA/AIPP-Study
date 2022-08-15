@@ -414,6 +414,12 @@ Thread [main]: Pi: 3.1415926436
 
 > 频繁的spin会带来极大的性能损失！
 
+> 使用03优化编译
+> 
+> >gcc -DDEBUG -g -Wall -O3 -lpthread -o pth_sum_busy_1 ./pth_sum_busy_1.c
+> 
+> 可以看到每个线程都能成功打印my_sum但主线程无法结束
+
 #### 互斥量
 
 忙等待虽然能够简单的实现临界区，但是有许多缺点。另一种实现临界区的方法是使用互斥量。互斥量有且只有两种状态，lock状态和unlock状态。一个互斥量同一时刻只能被一个线程拥有，当它被其他线程拥有时，为lock状态，否则为unlock状态。pthread_mutex_init将一个互斥量初始化，并设置为unlock状态。
