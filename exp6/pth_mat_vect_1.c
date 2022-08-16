@@ -1,10 +1,11 @@
 /* 
     pth_mat_vect.c
-    Author: CongKai
+    Author: ChongKai
 */
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 #include "timer.h"
 
 /* Global variables */
@@ -12,9 +13,10 @@
 #define N 800000
 int thread_count;
 double A[M][N];
-double y[M];
+double y[M][8];
 double x[N];
 
+void init(void);
 /* Thread function */
 void* Thread_work(void* rank);
 
@@ -28,9 +30,13 @@ int main(int argc, char* argv[]){
     thread_count = strtol(argv[1], NULL, 10);
     
     /* Initialize */
+    init();
 
     double st_time, ed_time;
     GET_TIME(st_time);
+
+    clock_t cpu_st_time, cpu_ed_time;
+    cpu_st_time = clock();
 
     /* Create threads */
     long thread;
@@ -44,12 +50,19 @@ int main(int argc, char* argv[]){
 
     free(thread_handles);
 
+    cpu_ed_time = clock();
     GET_TIME(ed_time);
 
     /* Log */
+    double cpu_time = (double)(cpu_ed_time-cpu_st_time)/CLOCKS_PER_SEC;
+    double wall_time = ed_time-st_time;
     printf(
-        "Thread [main]: Using [\033[31m%d\033[0m] threads, total time: [\033[31m%lf\033[0m] s\n", thread_count, ed_time-st_time
+        "Thread [main]: Using [\033[31m%d\033[0m] threads, cpu time [\033[31m%lf\033[0m] s, total time: [\033[31m%lf\033[0m] s, cpu use: \033[31m%lf\033[0m%%\n", thread_count, cpu_time, wall_time, cpu_time/wall_time*100
     );
+    printf("Thread [main]: Answer: y[8] = [\n");
+    for (long i = 0; i < M; i++)
+        printf("\t\t%lf\n", y[i][0]);
+    printf("\t]\n");
 
     return 0;
 } /* main */
@@ -68,10 +81,20 @@ void* Thread_work(void* rank){
     #endif
 
     for (i = my_first_row; i < my_last_row; i++){
-        y[i] = 0.0;
+        y[i][0] = 0.0;
         for (j = 0; j < N; j++)
-            y[i] += A[i][j]*x[j];
+            y[i][0] += A[i][j]*x[j];
     }
 
     return NULL;
 } /* Thread_work */
+
+void init(void){
+    long i, j;
+    for (i = 0; i < M; i++)
+        for (j = 0; j < N; j++)
+            A[i][j] = i*N + j;
+    
+    for (j = 0; j < N; j++)
+        x[j] = j;
+}
