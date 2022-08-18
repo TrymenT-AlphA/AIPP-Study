@@ -1,5 +1,5 @@
 /* 
-    pth_mat_vect.c
+    pth_mat_vect_0.c
     Author: ChongKai
 */
 #include <stdio.h>
@@ -59,10 +59,10 @@ int main(int argc, char* argv[]){
     printf(
         "Thread [main]: Using [\033[31m%d\033[0m] threads, cpu time [\033[31m%lf\033[0m] s, total time: [\033[31m%lf\033[0m] s, cpu use: \033[31m%lf\033[0m%%\n", thread_count, cpu_time, wall_time, cpu_time/wall_time*100
     );
-    printf("Thread [main]: Answer: y[8] = [\n");
-    for (long i = 0; i < M; i++)
-        printf("\t\t%lf\n", y[i]);
-    printf("\t]\n");
+    // printf("Thread [main]: Answer: y[8] = [\n");
+    // for (long i = 0; i < M; i++)
+    //     printf("\t\t%lf\n", y[i]);
+    // printf("\t]\n");
 
     return 0;
 } /* main */

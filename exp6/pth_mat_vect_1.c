@@ -1,5 +1,5 @@
 /* 
-    pth_mat_vect.c
+    pth_mat_vect_1.c
     Author: ChongKai
 */
 #include <stdio.h>
@@ -9,11 +9,11 @@
 #include "timer.h"
 
 /* Global variables */
-#define M 8
-#define N 800000
+#define M 800000
+#define N 8
 int thread_count;
 double A[M][N];
-double y[M][8];
+double y[M];
 double x[N];
 
 void init(void);
@@ -59,10 +59,10 @@ int main(int argc, char* argv[]){
     printf(
         "Thread [main]: Using [\033[31m%d\033[0m] threads, cpu time [\033[31m%lf\033[0m] s, total time: [\033[31m%lf\033[0m] s, cpu use: \033[31m%lf\033[0m%%\n", thread_count, cpu_time, wall_time, cpu_time/wall_time*100
     );
-    printf("Thread [main]: Answer: y[8] = [\n");
-    for (long i = 0; i < M; i++)
-        printf("\t\t%lf\n", y[i][0]);
-    printf("\t]\n");
+    // printf("Thread [main]: Answer: y[8] = [\n");
+    // for (long i = 0; i < M; i++)
+    //     printf("\t\t%lf\n", y[i]);
+    // printf("\t]\n");
 
     return 0;
 } /* main */
@@ -81,9 +81,9 @@ void* Thread_work(void* rank){
     #endif
 
     for (i = my_first_row; i < my_last_row; i++){
-        y[i][0] = 0.0;
+        y[i] = 0.0;
         for (j = 0; j < N; j++)
-            y[i][0] += A[i][j]*x[j];
+            y[i] += A[i][j]*x[j];
     }
 
     return NULL;
