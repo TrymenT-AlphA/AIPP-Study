@@ -81,7 +81,7 @@ int main(int argc,char *argv[]){
 
 void* thread_work(void* rank){
     long my_rank   = (long)rank;
-    int delta      = ceil(N/thread_count);
+    int delta      = (N+thread_count-1)/thread_count;
     int my_N_start = my_rank*delta;
     int my_N_end   = my_N_start+delta;
     if (my_N_end > N) my_N_end = N;
